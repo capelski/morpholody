@@ -129,6 +129,29 @@
   background: #ffffff;
 }
 
+.day-cell.has-data {
+  position: relative;
+}
+
+.day-cell.has-data::before {
+  content: '';
+  position: absolute;
+  bottom: 5px;
+  left: calc(50% - 3px);
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #48bb78;
+}
+
+.day-cell.today.has-data::before {
+  left: calc(50% + 2px);
+}
+
+.day-cell.selected.has-data::before {
+  background: rgba(255, 255, 255, 0.8);
+}
+
 /* Footer */
 .calendar-footer {
   margin-top: 1.25rem;

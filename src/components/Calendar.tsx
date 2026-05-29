@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import Modal from './Modal'
+import { getWeight, setWeight, getDaysWithWeightInMonth } from '../storage'
 import './Calendar.css'
 
 const DAYS_OF_WEEK = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -29,10 +30,17 @@ export default function Calendar() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [dropdown, setDropdown] = useState<DropdownState | null>(null)
   const [modalDate, setModalDate] = useState<Date | null>(null)
+  const [daysWithData, setDaysWithData] = useState<Set<number>>(() =>
+    getDaysWithWeightInMonth(today.getFullYear(), today.getMonth())
+  )
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   const daysInMonth = getDaysInMonth(viewYear, viewMonth)
   const firstDay = getFirstDayOfMonth(viewYear, viewMonth)
+
+  useEffect(() => {
+    setDaysWithData(getDaysWithWeightInMonth(viewYear, viewMonth))
+  }, [viewYear, viewMonth])
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -152,6 +160,7 @@ export default function Calendar() {
                 day === null ? 'empty' : '',
                 day !== null && isToday(day) ? 'today' : '',
                 day !== null && isSelected(day) ? 'selected' : '',
+                day !== null && daysWithData.has(day) ? 'has-data' : '',
               ].filter(Boolean).join(' ')}
               onClick={day !== null ? e => handleDayClick(day, e) : undefined}
               disabled={day === null}
@@ -177,8 +186,12 @@ export default function Calendar() {
       {modalDate && (
         <Modal
           date={modalDate}
+          initialWeight={getWeight(modalDate)}
           onClose={() => setModalDate(null)}
-          onSave={weight => console.log(`Saved weight ${weight} kg for ${modalDate.toDateString()}`)}
+          onSave={weight => {
+            setWeight(modalDate, weight)
+            setDaysWithData(getDaysWithWeightInMonth(viewYear, viewMonth))
+          }}
         />
       )}
 

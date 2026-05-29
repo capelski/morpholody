@@ -3,12 +3,13 @@ import './Modal.css'
 
 interface ModalProps {
   date: Date
+  initialWeight: number | null
   onClose: () => void
   onSave: (weight: number) => void
 }
 
-export default function Modal({ date, onClose, onSave }: ModalProps) {
-  const [weight, setWeight] = useState('')
+export default function Modal({ date, initialWeight, onClose, onSave }: ModalProps) {
+  const [weight, setWeight] = useState(initialWeight !== null ? String(initialWeight) : '')
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
