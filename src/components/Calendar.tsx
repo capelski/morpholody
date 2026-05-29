@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import Modal from './Modal'
+import DayView from './DayView'
 import { getWeight, setWeight, getDaysWithWeightInMonth } from '../storage'
 import './Calendar.css'
 
@@ -30,6 +31,7 @@ export default function Calendar() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [dropdown, setDropdown] = useState<DropdownState | null>(null)
   const [modalDate, setModalDate] = useState<Date | null>(null)
+  const [viewDate, setViewDate] = useState<Date | null>(null)
   const [daysWithData, setDaysWithData] = useState<Set<number>>(() =>
     getDaysWithWeightInMonth(today.getFullYear(), today.getMonth())
   )
@@ -74,8 +76,8 @@ export default function Calendar() {
   }
 
   function handleViewDay(date: Date) {
-    alert(`Viewing ${date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`)
     setDropdown(null)
+    setViewDate(date)
   }
 
   function handleAddData(date: Date) {
@@ -182,6 +184,14 @@ export default function Calendar() {
           )}
         </div>
       </div>
+
+      {viewDate && (
+        <DayView
+          date={viewDate}
+          weight={getWeight(viewDate)}
+          onClose={() => setViewDate(null)}
+        />
+      )}
 
       {modalDate && (
         <Modal
