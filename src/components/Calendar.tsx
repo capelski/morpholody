@@ -41,7 +41,7 @@ export default function Calendar() {
   const firstDay = getFirstDayOfMonth(viewYear, viewMonth)
 
   useEffect(() => {
-    getDaysWithWeightInMonth(viewYear, viewMonth).then(setDaysWithData)
+    getDaysWithWeightInMonth(viewYear, viewMonth + 1).then(setDaysWithData)
   }, [viewYear, viewMonth])
 
   useEffect(() => {
@@ -210,7 +210,7 @@ export default function Calendar() {
           onClose={() => setModalDate(null)}
           onSave={async weight => {
             await setWeight(modalDate, weight)
-            setDaysWithData(await getDaysWithWeightInMonth(viewYear, viewMonth))
+            setDaysWithData(await getDaysWithWeightInMonth(viewYear, viewMonth + 1))
           }}
         />
       )}
