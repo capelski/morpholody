@@ -18,6 +18,24 @@ export function setWeight(date: Date, weight: number): void {
   localStorage.setItem(dateKey(date), String(weight))
 }
 
+export interface WeightEntry {
+  dateKey: string  // YYYY-MM-DD
+  weight: number
+}
+
+export function getAllWeightEntries(): WeightEntry[] {
+  const entries: WeightEntry[] = []
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i)
+    if (!key?.startsWith(PREFIX)) continue
+    const dateKey = key.slice(PREFIX.length)
+    const value = parseFloat(localStorage.getItem(key)!)
+    if (!isNaN(value)) entries.push({ dateKey, weight: value })
+  }
+  entries.sort((a, b) => a.dateKey.localeCompare(b.dateKey))
+  return entries
+}
+
 export function getDaysWithWeightInMonth(year: number, month: number): Set<number> {
   const prefix = `${PREFIX}${year}-${String(month + 1).padStart(2, '0')}-`
   const days = new Set<number>()
