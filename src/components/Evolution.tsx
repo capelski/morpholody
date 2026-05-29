@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Dot,
@@ -36,14 +36,17 @@ export default function Evolution() {
   const [year, setYear] = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth() + 1)
 
-  const data = useMemo<ChartPoint[]>(() => {
-    const daysInMonth = new Date(year, month, 0).getDate()
-    const entries = getWeightEntriesForMonth(year, month)
-    const entryMap = new Map(entries.map(e => [e.dateKey, e.weight]))
-    return Array.from({ length: daysInMonth }, (_, i) => {
-      const day = i + 1
-      const dk = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-      return { dateKey: dk, label: String(day), weight: entryMap.get(dk) ?? null }
+  const [data, setData] = useState<ChartPoint[]>([])
+
+  useEffect(() => {
+    getWeightEntriesForMonth(year, month).then(entries => {
+      const daysInMonth = new Date(year, month, 0).getDate()
+      const entryMap = new Map(entries.map(e => [e.dateKey, e.weight]))
+      setData(Array.from({ length: daysInMonth }, (_, i) => {
+        const day = i + 1
+        const dk = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+        return { dateKey: dk, label: String(day), weight: entryMap.get(dk) ?? null }
+      }))
     })
   }, [year, month])
 

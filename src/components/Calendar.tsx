@@ -31,18 +31,28 @@ export default function Calendar() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [dropdown, setDropdown] = useState<DropdownState | null>(null)
   const [modalDate, setModalDate] = useState<Date | null>(null)
+  const [modalInitialWeight, setModalInitialWeight] = useState<number | null>(null)
   const [viewDate, setViewDate] = useState<Date | null>(null)
-  const [daysWithData, setDaysWithData] = useState<Set<number>>(() =>
-    getDaysWithWeightInMonth(today.getFullYear(), today.getMonth())
-  )
+  const [viewDateWeight, setViewDateWeight] = useState<number | null>(null)
+  const [daysWithData, setDaysWithData] = useState<Set<number>>(new Set())
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   const daysInMonth = getDaysInMonth(viewYear, viewMonth)
   const firstDay = getFirstDayOfMonth(viewYear, viewMonth)
 
   useEffect(() => {
-    setDaysWithData(getDaysWithWeightInMonth(viewYear, viewMonth))
+    getDaysWithWeightInMonth(viewYear, viewMonth).then(setDaysWithData)
   }, [viewYear, viewMonth])
+
+  useEffect(() => {
+    if (viewDate) getWeight(viewDate).then(setViewDateWeight)
+    else setViewDateWeight(null)
+  }, [viewDate])
+
+  useEffect(() => {
+    if (modalDate) getWeight(modalDate).then(setModalInitialWeight)
+    else setModalInitialWeight(null)
+  }, [modalDate])
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -188,7 +198,7 @@ export default function Calendar() {
       {viewDate && (
         <DayView
           date={viewDate}
-          weight={getWeight(viewDate)}
+          weight={viewDateWeight}
           onClose={() => setViewDate(null)}
         />
       )}
@@ -196,11 +206,11 @@ export default function Calendar() {
       {modalDate && (
         <Modal
           date={modalDate}
-          initialWeight={getWeight(modalDate)}
+          initialWeight={modalInitialWeight}
           onClose={() => setModalDate(null)}
-          onSave={weight => {
-            setWeight(modalDate, weight)
-            setDaysWithData(getDaysWithWeightInMonth(viewYear, viewMonth))
+          onSave={async weight => {
+            await setWeight(modalDate, weight)
+            setDaysWithData(await getDaysWithWeightInMonth(viewYear, viewMonth))
           }}
         />
       )}
