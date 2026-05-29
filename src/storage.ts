@@ -36,6 +36,20 @@ export function getAllWeightEntries(): WeightEntry[] {
   return entries
 }
 
+export function getWeightEntriesForMonth(year: number, month: number): WeightEntry[] {
+  const prefix = `${PREFIX}${year}-${String(month).padStart(2, '0')}-`
+  const entries: WeightEntry[] = []
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i)
+    if (!key?.startsWith(prefix)) continue
+    const dk = key.slice(PREFIX.length)
+    const value = parseFloat(localStorage.getItem(key)!)
+    if (!isNaN(value)) entries.push({ dateKey: dk, weight: value })
+  }
+  entries.sort((a, b) => a.dateKey.localeCompare(b.dateKey))
+  return entries
+}
+
 export function getDaysWithWeightInMonth(year: number, month: number): Set<number> {
   const prefix = `${PREFIX}${year}-${String(month + 1).padStart(2, '0')}-`
   const days = new Set<number>()
