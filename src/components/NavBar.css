@@ -23,7 +23,9 @@
   font-family: inherit;
   color: #718096;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
 }
 
 .navbar-item:hover:not(.active) {

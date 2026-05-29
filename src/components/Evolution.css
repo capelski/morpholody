@@ -1,7 +1,7 @@
 .evolution {
   background: #ffffff;
   border-radius: 16px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.10);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
   padding: 1.5rem;
   width: 360px;
 }
@@ -50,7 +50,9 @@
   line-height: 1;
   padding: 0.2rem 0.5rem;
   border-radius: 6px;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
 }
 
 .evolution-month-btn:hover {

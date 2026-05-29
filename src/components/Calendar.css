@@ -1,7 +1,7 @@
 .calendar {
   background: #ffffff;
   border-radius: 16px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.10);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
   padding: 1.5rem;
   width: 360px;
   user-select: none;
@@ -46,7 +46,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
 }
 
 .nav-btn:hover {
@@ -86,7 +88,9 @@
   font-size: 0.9rem;
   color: #2d3748;
   cursor: pointer;
-  transition: background 0.12s, color 0.12s;
+  transition:
+    background 0.12s,
+    color 0.12s;
   font-family: inherit;
 }
 
@@ -108,7 +112,7 @@
 }
 
 .day-cell.today::after {
-  content: '';
+  content: "";
   position: absolute;
   bottom: 5px;
   left: 50%;
@@ -134,7 +138,7 @@
 }
 
 .day-cell.has-data::before {
-  content: '';
+  content: "";
   position: absolute;
   bottom: 5px;
   left: calc(50% - 3px);
@@ -171,7 +175,9 @@
   color: #3182ce;
   cursor: pointer;
   font-family: inherit;
-  transition: background 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
 }
 
 .today-btn:hover {
@@ -201,8 +207,14 @@
 }
 
 @keyframes dropdown-in {
-  from { opacity: 0; transform: translateY(-4px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .day-dropdown-item {
