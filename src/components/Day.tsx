@@ -13,10 +13,15 @@ interface DayProps {
   onSaved?: () => void;
 }
 
+function nowHHMM(): string {
+  const now = new Date();
+  return `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+}
+
 export default function Day({ date, onClose, onSaved }: DayProps) {
   const [weightStr, setWeightStr] = useState("");
   const [meals, setMeals] = useState<MealEntry[]>([]);
-  const [newTime, setNewTime] = useState("12:00");
+  const [newTime, setNewTime] = useState(nowHHMM);
   const [newDesc, setNewDesc] = useState("");
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editTime, setEditTime] = useState("");
@@ -26,6 +31,7 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
   useEffect(() => {
     setWeightStr("");
     setMeals([]);
+    setNewTime(nowHHMM());
     setNewDesc("");
     setEditingIndex(null);
     getDiaryEntry(toDateKey(date)).then((entry) => {
