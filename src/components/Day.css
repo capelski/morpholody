@@ -296,6 +296,38 @@
   border-color: #3182ce;
 }
 
+.day-meal-cal-input {
+  width: 68px;
+  flex-shrink: 0;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.5rem 0.4rem;
+  font-size: 0.875rem;
+  font-family: inherit;
+  color: #1a202c;
+  outline: none;
+  transition: border-color 0.15s;
+  -moz-appearance: textfield;
+}
+
+.day-meal-cal-input::-webkit-outer-spin-button,
+.day-meal-cal-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+}
+
+.day-meal-cal-input:focus {
+  border-color: #3182ce;
+}
+
+.day-meal-cal {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #718096;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
 .day-meal-add-btn {
   flex-shrink: 0;
   background: none;

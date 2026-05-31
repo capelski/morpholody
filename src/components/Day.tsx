@@ -5,12 +5,18 @@ import "./Day.css";
 interface MealEntry {
   time: string;
   description: string;
+  calories: number | null;
 }
 
 interface DayProps {
   date: Date;
   onClose: () => void;
   onSaved?: () => void;
+}
+
+function parseCal(s: string): number | null {
+  const v = parseInt(s, 10);
+  return !isNaN(v) && v > 0 ? v : null;
 }
 
 function nowHHMM(): string {
@@ -23,9 +29,11 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
   const [meals, setMeals] = useState<MealEntry[]>([]);
   const [newTime, setNewTime] = useState(nowHHMM);
   const [newDesc, setNewDesc] = useState("");
+  const [newCalStr, setNewCalStr] = useState("");
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editTime, setEditTime] = useState("");
   const [editDesc, setEditDesc] = useState("");
+  const [editCalStr, setEditCalStr] = useState("");
   const weightRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -33,10 +41,17 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
     setMeals([]);
     setNewTime(nowHHMM());
     setNewDesc("");
+    setNewCalStr("");
     setEditingIndex(null);
     getDiaryEntry(toDateKey(date)).then((entry) => {
       setWeightStr(entry?.weight != null ? String(entry.weight) : "");
-      setMeals(entry?.meals ?? []);
+      setMeals(
+        (entry?.meals ?? []).map(({ time, description, calories }) => ({
+          time,
+          description,
+          calories: calories ?? null,
+        })),
+      );
     });
   }, [date]);
 
@@ -59,11 +74,16 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
 
   function addMeal() {
     if (!newDesc.trim() || meals.some((m) => m.time === newTime)) return;
-    const entry: MealEntry = { time: newTime, description: newDesc.trim() };
+    const entry: MealEntry = {
+      time: newTime,
+      description: newDesc.trim(),
+      calories: parseCal(newCalStr),
+    };
     setMeals((prev) =>
       [...prev, entry].sort((a, b) => a.time.localeCompare(b.time)),
     );
     setNewDesc("");
+    setNewCalStr("");
   }
 
   function removeMeal(index: number) {
@@ -75,6 +95,7 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
     setEditingIndex(index);
     setEditTime(meal.time);
     setEditDesc(meal.description);
+    setEditCalStr(meal.calories != null ? String(meal.calories) : "");
   }
 
   function confirmEdit() {
@@ -82,7 +103,11 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
       setEditingIndex(null);
       return;
     }
-    const entry: MealEntry = { time: editTime, description: editDesc.trim() };
+    const entry: MealEntry = {
+      time: editTime,
+      description: editDesc.trim(),
+      calories: parseCal(editCalStr),
+    };
     setMeals((prev) => {
       const filtered = prev.filter(
         (m, i) => i !== editingIndex && m.time !== editTime,
@@ -197,6 +222,27 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
                         }}
                         autoFocus
                       />
+                      <input
+                        type="number"
+                        className="day-meal-cal-input"
+                        placeholder="kcal"
+                        min="1"
+                        step="1"
+                        value={editCalStr}
+                        onChange={(e) => setEditCalStr(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            confirmEdit();
+                          }
+                          if (e.key === "Escape") {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setEditingIndex(null);
+                          }
+                        }}
+                        aria-label="Calories"
+                      />
                       <button
                         type="button"
                         className="day-meal-confirm"
@@ -223,6 +269,11 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
                       >
                         <span className="day-meal-time">{meal.time}</span>
                         <span className="day-meal-desc">{meal.description}</span>
+                        {meal.calories != null && (
+                          <span className="day-meal-cal">
+                            {meal.calories} kcal
+                          </span>
+                        )}
                       </button>
                       <button
                         type="button"
@@ -258,6 +309,22 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
                   }
                 }}
                 aria-label="Meal description"
+              />
+              <input
+                type="number"
+                className="day-meal-cal-input"
+                placeholder="kcal"
+                min="1"
+                step="1"
+                value={newCalStr}
+                onChange={(e) => setNewCalStr(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addMeal();
+                  }
+                }}
+                aria-label="Calories"
               />
               <button
                 type="button"
