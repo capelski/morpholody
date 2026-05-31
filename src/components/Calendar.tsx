@@ -1,7 +1,6 @@
-import { useState, useEffect, useRef } from "react";
-import Modal from "./Modal";
-import DayView from "./DayView";
-import { getWeight, setWeight, getDaysWithWeightInMonth } from "../storage";
+import { useState, useEffect } from "react";
+import Day from "./Day";
+import { getDaysWithWeightInMonth } from "../storage";
 import "./Calendar.css";
 
 const DAYS_OF_WEEK = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -20,12 +19,6 @@ const MONTHS = [
   "December",
 ];
 
-interface DropdownState {
-  date: Date;
-  x: number;
-  y: number;
-}
-
 function getDaysInMonth(year: number, month: number): number {
   return new Date(year, month + 1, 0).getDate();
 }
@@ -39,15 +32,7 @@ export default function Calendar() {
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [dropdown, setDropdown] = useState<DropdownState | null>(null);
-  const [modalDate, setModalDate] = useState<Date | null>(null);
-  const [modalInitialWeight, setModalInitialWeight] = useState<number | null>(
-    null,
-  );
-  const [viewDate, setViewDate] = useState<Date | null>(null);
-  const [viewDateWeight, setViewDateWeight] = useState<number | null>(null);
   const [daysWithData, setDaysWithData] = useState<Set<number>>(new Set());
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const daysInMonth = getDaysInMonth(viewYear, viewMonth);
   const firstDay = getFirstDayOfMonth(viewYear, viewMonth);
@@ -56,63 +41,23 @@ export default function Calendar() {
     getDaysWithWeightInMonth(viewYear, viewMonth + 1).then(setDaysWithData);
   }, [viewYear, viewMonth]);
 
-  useEffect(() => {
-    if (viewDate) getWeight(viewDate).then(setViewDateWeight);
-    else setViewDateWeight(null);
-  }, [viewDate]);
-
-  useEffect(() => {
-    if (modalDate) getWeight(modalDate).then(setModalInitialWeight);
-    else setModalInitialWeight(null);
-  }, [modalDate]);
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    function handlePointerDown(e: PointerEvent) {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(e.target as Node)
-      ) {
-        setDropdown(null);
-      }
-    }
-    if (dropdown) {
-      document.addEventListener("pointerdown", handlePointerDown);
-      return () =>
-        document.removeEventListener("pointerdown", handlePointerDown);
-    }
-  }, [dropdown]);
-
-  // Close dropdown on Escape
-  useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") setDropdown(null);
-    }
-    if (dropdown) {
-      document.addEventListener("keydown", handleKeyDown);
-      return () => document.removeEventListener("keydown", handleKeyDown);
-    }
-  }, [dropdown]);
-
-  function handleDayClick(day: number, e: React.MouseEvent<HTMLButtonElement>) {
+  function handleDayClick(day: number) {
     const date = new Date(viewYear, viewMonth, day);
-    setSelectedDate(date);
-    const rect = e.currentTarget.getBoundingClientRect();
-    setDropdown({ date, x: rect.left, y: rect.bottom + 6 });
-  }
-
-  function handleViewDay(date: Date) {
-    setDropdown(null);
-    setViewDate(date);
-  }
-
-  function handleAddData(date: Date) {
-    setDropdown(null);
-    setModalDate(date);
+    // Clicking the selected day again closes the panel.
+    if (
+      selectedDate &&
+      selectedDate.getDate() === day &&
+      selectedDate.getMonth() === viewMonth &&
+      selectedDate.getFullYear() === viewYear
+    ) {
+      setSelectedDate(null);
+    } else {
+      setSelectedDate(date);
+    }
   }
 
   function prevMonth() {
-    setDropdown(null);
+    setSelectedDate(null);
     if (viewMonth === 0) {
       setViewMonth(11);
       setViewYear((y) => y - 1);
@@ -122,7 +67,7 @@ export default function Calendar() {
   }
 
   function nextMonth() {
-    setDropdown(null);
+    setSelectedDate(null);
     if (viewMonth === 11) {
       setViewMonth(0);
       setViewYear((y) => y + 1);
@@ -135,7 +80,6 @@ export default function Calendar() {
     setViewYear(today.getFullYear());
     setViewMonth(today.getMonth());
     setSelectedDate(today);
-    setDropdown(null);
   }
 
   function isToday(day: number) {
@@ -206,17 +150,14 @@ export default function Calendar() {
               ]
                 .filter(Boolean)
                 .join(" ")}
-              onClick={day !== null ? (e) => handleDayClick(day, e) : undefined}
+              onClick={day !== null ? () => handleDayClick(day) : undefined}
               disabled={day === null}
               aria-label={
                 day !== null
                   ? `${MONTHS[viewMonth]} ${day}, ${viewYear}`
                   : undefined
               }
-              aria-haspopup={day !== null ? "menu" : undefined}
-              aria-expanded={
-                day !== null && isSelected(day) && dropdown !== null
-              }
+              aria-pressed={day !== null ? isSelected(day) : undefined}
             >
               {day ?? ""}
             </button>
@@ -227,65 +168,11 @@ export default function Calendar() {
           <button className="today-btn" onClick={goToToday}>
             Today
           </button>
-          {selectedDate && (
-            <span className="selected-label">
-              {selectedDate.toLocaleDateString("en-US", {
-                weekday: "long",
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })}
-            </span>
-          )}
         </div>
       </div>
 
-      {viewDate && (
-        <DayView
-          date={viewDate}
-          weight={viewDateWeight}
-          onClose={() => setViewDate(null)}
-        />
-      )}
-
-      {modalDate && (
-        <Modal
-          date={modalDate}
-          initialWeight={modalInitialWeight}
-          onClose={() => setModalDate(null)}
-          onSave={async (weight) => {
-            await setWeight(modalDate, weight);
-            setDaysWithData(
-              await getDaysWithWeightInMonth(viewYear, viewMonth + 1),
-            );
-          }}
-        />
-      )}
-
-      {dropdown && (
-        <div
-          ref={dropdownRef}
-          className="day-dropdown"
-          style={{ top: dropdown.y, left: dropdown.x }}
-          role="menu"
-        >
-          <button
-            className="day-dropdown-item"
-            role="menuitem"
-            onClick={() => handleViewDay(dropdown.date)}
-          >
-            <span className="day-dropdown-icon">&#128065;</span>
-            View day
-          </button>
-          <button
-            className="day-dropdown-item"
-            role="menuitem"
-            onClick={() => handleAddData(dropdown.date)}
-          >
-            <span className="day-dropdown-icon">&#43;</span>
-            Add data
-          </button>
-        </div>
+      {selectedDate && (
+        <Day date={selectedDate} onClose={() => setSelectedDate(null)} />
       )}
     </>
   );
