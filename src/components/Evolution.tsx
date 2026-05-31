@@ -12,13 +12,18 @@ import {
 import { getDiaryEntriesForMonth } from "../storage";
 import "./Evolution.css";
 
+const WEIGHT_COLOR = "#3182ce";
+const CAL_COLOR = "#dd6b20";
+
 interface ChartPoint {
   dateKey: string;
   label: string;
   weight: number | null;
+  calories: number | null;
 }
 
 interface TooltipPayload {
+  dataKey: string;
   value: number | null;
   payload: ChartPoint;
 }
@@ -30,8 +35,10 @@ function CustomTooltip({
   active?: boolean;
   payload?: TooltipPayload[];
 }) {
-  if (!active || !payload?.length || payload[0].value === null) return null;
-  const { value, payload: point } = payload[0];
+  if (!active || !payload?.length) return null;
+  if (payload.every((p) => p.value == null)) return null;
+
+  const point = payload[0].payload;
   const [y, m, d] = point.dateKey.split("-");
   const date = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
   const label = date.toLocaleDateString("en-US", {
@@ -40,10 +47,19 @@ function CustomTooltip({
     day: "numeric",
     year: "numeric",
   });
+
+  const weightEntry = payload.find((p) => p.dataKey === "weight");
+  const calEntry = payload.find((p) => p.dataKey === "calories");
+
   return (
     <div className="chart-tooltip">
       <p className="chart-tooltip-date">{label}</p>
-      <p className="chart-tooltip-value">{value} kg</p>
+      {weightEntry?.value != null && (
+        <p className="chart-tooltip-weight">{weightEntry.value} kg</p>
+      )}
+      {calEntry?.value != null && (
+        <p className="chart-tooltip-calories">{calEntry.value} kcal</p>
+      )}
     </div>
   );
 }
@@ -58,7 +74,8 @@ export default function Evolution() {
   useEffect(() => {
     getDiaryEntriesForMonth(year, month).then((entries) => {
       const daysInMonth = new Date(year, month, 0).getDate();
-      const entryMap = new Map(entries.map((e) => [e.date, e.weight]));
+      const weightMap = new Map(entries.map((e) => [e.date, e.weight]));
+      const calMap = new Map(entries.map((e) => [e.date, e.calories]));
       setData(
         Array.from({ length: daysInMonth }, (_, i) => {
           const day = i + 1;
@@ -66,7 +83,8 @@ export default function Evolution() {
           return {
             dateKey: dk,
             label: String(day),
-            weight: entryMap.get(dk) ?? null,
+            weight: weightMap.get(dk) ?? null,
+            calories: calMap.get(dk) ?? null,
           };
         }),
       );
@@ -76,9 +94,20 @@ export default function Evolution() {
   const weights = data
     .map((d) => d.weight)
     .filter((w): w is number => w !== null);
-  const hasData = weights.length > 0;
-  const minY = hasData ? Math.floor(Math.min(...weights) - 1) : 0;
-  const maxY = hasData ? Math.ceil(Math.max(...weights) + 1) : 100;
+  const hasWeight = weights.length > 0;
+  const minWeight = hasWeight ? Math.floor(Math.min(...weights) - 1) : 0;
+  const maxWeight = hasWeight ? Math.ceil(Math.max(...weights) + 1) : 100;
+
+  const caloriesValues = data
+    .map((d) => d.calories)
+    .filter((c): c is number => c !== null);
+  const hasCalories = caloriesValues.length > 0;
+  const minCal = hasCalories
+    ? Math.max(0, Math.floor(Math.min(...caloriesValues) - 100))
+    : 0;
+  const maxCal = hasCalories
+    ? Math.ceil(Math.max(...caloriesValues) + 100)
+    : 3000;
 
   const monthLabel = new Date(year, month - 1, 1).toLocaleDateString("en-US", {
     month: "long",
@@ -127,7 +156,7 @@ export default function Evolution() {
         <ResponsiveContainer width="100%" height={220}>
           <LineChart
             data={data}
-            margin={{ top: 8, right: 12, bottom: 0, left: 0 }}
+            margin={{ top: 8, right: hasCalories ? 0 : 12, bottom: 0, left: 0 }}
           >
             <CartesianGrid
               strokeDasharray="3 3"
@@ -142,25 +171,37 @@ export default function Evolution() {
               interval="preserveStartEnd"
             />
             <YAxis
-              domain={[minY, maxY]}
+              yAxisId="weight"
+              orientation="left"
+              domain={[minWeight, maxWeight]}
               tick={{ fontSize: 11, fill: "#a0aec0" }}
               axisLine={false}
               tickLine={false}
               tickFormatter={(v) => `${v}`}
               width={32}
             />
+            {hasCalories && (
+              <YAxis
+                yAxisId="calories"
+                orientation="right"
+                domain={[minCal, maxCal]}
+                tick={{ fontSize: 11, fill: CAL_COLOR }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={(v) => `${v}`}
+                width={44}
+              />
+            )}
             <Tooltip content={<CustomTooltip />} />
             <Line
+              yAxisId="weight"
               type="monotone"
               dataKey="weight"
-              stroke="#3182ce"
+              stroke={WEIGHT_COLOR}
               strokeWidth={2.5}
               connectNulls={false}
               dot={(props: any) => {
-                if (
-                  props.payload?.weight === null ||
-                  props.payload?.weight === undefined
-                ) {
+                if (props.payload?.weight == null) {
                   return <g key={props.key} />;
                 }
                 return (
@@ -168,17 +209,14 @@ export default function Evolution() {
                     key={props.key}
                     {...props}
                     r={4}
-                    fill="#3182ce"
+                    fill={WEIGHT_COLOR}
                     stroke="#ffffff"
                     strokeWidth={2}
                   />
                 );
               }}
               activeDot={(props: any) => {
-                if (
-                  props.payload?.weight === null ||
-                  props.payload?.weight === undefined
-                ) {
+                if (props.payload?.weight == null) {
                   return <g key={props.key} />;
                 }
                 return (
@@ -193,9 +231,49 @@ export default function Evolution() {
                 );
               }}
             />
+            {hasCalories && (
+              <Line
+                yAxisId="calories"
+                type="monotone"
+                dataKey="calories"
+                stroke={CAL_COLOR}
+                strokeWidth={2}
+                connectNulls={false}
+                dot={(props: any) => {
+                  if (props.payload?.calories == null) {
+                    return <g key={props.key} />;
+                  }
+                  return (
+                    <Dot
+                      key={props.key}
+                      {...props}
+                      r={3}
+                      fill={CAL_COLOR}
+                      stroke="#ffffff"
+                      strokeWidth={2}
+                    />
+                  );
+                }}
+                activeDot={(props: any) => {
+                  if (props.payload?.calories == null) {
+                    return <g key={props.key} />;
+                  }
+                  return (
+                    <Dot
+                      key={props.key}
+                      {...props}
+                      r={5}
+                      fill="#c05621"
+                      stroke="#ffffff"
+                      strokeWidth={2}
+                    />
+                  );
+                }}
+              />
+            )}
           </LineChart>
         </ResponsiveContainer>
-        {!hasData && (
+        {!hasWeight && (
           <p className="evolution-no-data">No entries for this month</p>
         )}
       </div>

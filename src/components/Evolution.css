@@ -84,8 +84,15 @@
   margin-bottom: 0.15rem;
 }
 
-.chart-tooltip-value {
+.chart-tooltip-weight {
   font-size: 0.95rem;
   font-weight: 700;
-  color: #ffffff;
+  color: #90cdf4;
+}
+
+.chart-tooltip-calories {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #fbd38d;
+  margin-top: 0.1rem;
 }
