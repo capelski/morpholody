@@ -1,3 +1,4 @@
+/* Overlay */
 .day-overlay {
   position: fixed;
   inset: 0;
@@ -18,12 +19,15 @@
   }
 }
 
+/* Panel */
 .day-panel {
   background: #ffffff;
   border-radius: 16px;
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.18);
-  width: 360px;
+  width: 420px;
   max-width: calc(100vw - 2rem);
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
   animation: day-panel-in 0.15s ease;
 }
 
@@ -40,7 +44,7 @@
 
 .day-panel-header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   padding: 1.25rem 1.25rem 0;
 }
@@ -68,51 +72,71 @@
   color: #4a5568;
 }
 
+/* Form body */
 .day-body {
   padding: 1.25rem;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.25rem;
 }
 
-.day-section {
+/* Field */
+.day-field {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
 }
 
-.day-section-label {
-  font-size: 0.75rem;
-  font-weight: 700;
+.day-field-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #4a5568;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #718096;
-  margin: 0;
+  letter-spacing: 0.04em;
 }
 
-.day-weight {
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: #1a202c;
-  margin: 0;
-  padding: 0.6rem 0.85rem;
-  background: #f7fafc;
+/* Weight input */
+.day-input-row {
+  display: flex;
+  align-items: center;
+  border: 1.5px solid #e2e8f0;
   border-radius: 9px;
+  overflow: hidden;
+  transition: border-color 0.15s;
 }
 
-.day-weight-unit {
+.day-input-row:focus-within {
+  border-color: #3182ce;
+}
+
+.day-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  padding: 0.6rem 0.75rem;
+  font-size: 1rem;
+  font-family: inherit;
+  color: #1a202c;
+  background: transparent;
+  -moz-appearance: textfield;
+}
+
+.day-input::-webkit-outer-spin-button,
+.day-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+}
+
+.day-input-unit {
+  padding: 0 0.75rem;
   font-size: 0.85rem;
-  font-weight: 500;
+  font-weight: 600;
   color: #a0aec0;
+  border-left: 1.5px solid #e2e8f0;
+  line-height: 2.5rem;
+  background: #f7fafc;
 }
 
-.day-empty {
-  font-size: 0.875rem;
-  color: #a0aec0;
-  font-style: italic;
-  margin: 0;
-}
-
+/* Meal list */
 .day-meals {
   list-style: none;
   margin: 0;
@@ -120,26 +144,166 @@
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
+  max-height: 180px;
+  overflow-y: auto;
 }
 
 .day-meal-row {
   display: flex;
-  align-items: baseline;
-  gap: 0.65rem;
-  padding: 0.55rem 0.85rem;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.6rem;
   background: #f7fafc;
-  border-radius: 9px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
 }
 
 .day-meal-time {
   font-size: 0.78rem;
-  font-weight: 700;
+  font-weight: 600;
   color: #4a5568;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
 
 .day-meal-desc {
-  font-size: 0.9rem;
-  color: #2d3748;
+  flex: 1;
+  font-size: 0.875rem;
+  color: #1a202c;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.day-meal-delete {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #a0aec0;
+  font-size: 0.7rem;
+  padding: 0.15rem 0.25rem;
+  line-height: 1;
+  border-radius: 4px;
+  transition: color 0.12s;
+}
+
+.day-meal-delete:hover {
+  color: #e53e3e;
+}
+
+/* Add meal row */
+.day-meal-add {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.day-meal-time-input {
+  width: 88px;
+  flex-shrink: 0;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.5rem 0.4rem;
+  font-size: 0.875rem;
+  font-family: inherit;
+  color: #1a202c;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.day-meal-time-input:focus {
+  border-color: #3182ce;
+}
+
+.day-meal-desc-input {
+  flex: 1;
+  min-width: 0;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.5rem 0.6rem;
+  font-size: 0.875rem;
+  font-family: inherit;
+  color: #1a202c;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.day-meal-desc-input:focus {
+  border-color: #3182ce;
+}
+
+.day-meal-add-btn {
+  flex-shrink: 0;
+  background: none;
+  border: 1.5px solid #3182ce;
+  color: #3182ce;
+  border-radius: 8px;
+  padding: 0.45rem 0.7rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    color 0.12s,
+    border-color 0.12s;
+}
+
+.day-meal-add-btn:hover:not(:disabled) {
+  background: #ebf8ff;
+}
+
+.day-meal-add-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  border-color: #a0aec0;
+  color: #a0aec0;
+}
+
+/* Actions */
+.day-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+}
+
+.day-btn-cancel,
+.day-btn-save {
+  border-radius: 8px;
+  padding: 0.5rem 1.1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    border-color 0.12s,
+    opacity 0.12s;
+}
+
+.day-btn-cancel {
+  background: none;
+  border: 1px solid #e2e8f0;
+  color: #4a5568;
+}
+
+.day-btn-cancel:hover {
+  background: #f7fafc;
+}
+
+.day-btn-save {
+  background: #3182ce;
+  border: 1px solid transparent;
+  color: #ffffff;
+}
+
+.day-btn-save:hover:not(:disabled) {
+  background: #2b6cb0;
+}
+
+.day-btn-save:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }

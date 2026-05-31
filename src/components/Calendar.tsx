@@ -172,7 +172,15 @@ export default function Calendar() {
       </div>
 
       {selectedDate && (
-        <Day date={selectedDate} onClose={() => setSelectedDate(null)} />
+        <Day
+          date={selectedDate}
+          onClose={() => setSelectedDate(null)}
+          onSaved={() => {
+            getDaysWithWeightInMonth(viewYear, viewMonth + 1).then(
+              setDaysWithData,
+            );
+          }}
+        />
       )}
     </>
   );
