@@ -57,12 +57,11 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
   }, [onClose, editingIndex]);
 
   function addMeal() {
-    if (!newDesc.trim()) return;
+    if (!newDesc.trim() || meals.some((m) => m.time === newTime)) return;
     const entry: MealEntry = { time: newTime, description: newDesc.trim() };
-    setMeals((prev) => {
-      const without = prev.filter((m) => m.time !== newTime);
-      return [...without, entry].sort((a, b) => a.time.localeCompare(b.time));
-    });
+    setMeals((prev) =>
+      [...prev, entry].sort((a, b) => a.time.localeCompare(b.time)),
+    );
     setNewDesc("");
   }
 
@@ -110,6 +109,7 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
     year: "numeric",
   });
 
+  const newTimeConflict = meals.some((m) => m.time === newTime);
   const weightValid = weightStr !== "" && parseFloat(weightStr) > 0;
   const canSave = weightValid || meals.length > 0;
 
@@ -264,11 +264,16 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
                 type="button"
                 className="day-meal-add-btn"
                 onClick={addMeal}
-                disabled={!newDesc.trim()}
+                disabled={!newDesc.trim() || newTimeConflict}
               >
                 Add
               </button>
             </div>
+            {newTimeConflict && (
+              <p className="day-meal-conflict">
+                A meal at {newTime} already exists
+              </p>
+            )}
           </div>
 
           <div className="day-actions">

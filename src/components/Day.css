@@ -324,6 +324,12 @@
   color: #a0aec0;
 }
 
+.day-meal-conflict {
+  font-size: 0.78rem;
+  color: #e53e3e;
+  margin: 0;
+}
+
 /* Actions */
 .day-actions {
   display: flex;
