@@ -1,7 +1,6 @@
 const DB_NAME = "morpholody";
-const DB_VERSION = 2;
-const WEIGHTS_STORE = "weights";
-const MEALS_STORE = "meals";
+const DB_VERSION = 3;
+const DIARY_STORE = "diary";
 
 let dbPromise: Promise<IDBDatabase> | null = null;
 
@@ -9,11 +8,79 @@ function openDB(): Promise<IDBDatabase> {
   if (!dbPromise) {
     dbPromise = new Promise((resolve, reject) => {
       const req = indexedDB.open(DB_NAME, DB_VERSION);
+
       req.onupgradeneeded = (e) => {
         const db = req.result;
-        if (e.oldVersion < 1) db.createObjectStore(WEIGHTS_STORE);
-        if (e.oldVersion < 2) db.createObjectStore(MEALS_STORE);
+        const tx = req.transaction!;
+
+        if (e.oldVersion === 0) {
+          // Fresh install — create diary store directly, no migration needed.
+          db.createObjectStore(DIARY_STORE, { keyPath: "date" });
+          return;
+        }
+
+        // Upgrading from v1 or v2: migrate weights and meals into diary, then
+        // drop the old object stores.
+        const diaryStore = db.createObjectStore(DIARY_STORE, {
+          keyPath: "date",
+        });
+        const diary = new Map<
+          string,
+          {
+            date: string;
+            weight: number | null;
+            meals: Array<{ time: string; description: string }>;
+          }
+        >();
+
+        // Phase 1 — read all weight entries.
+        const weightReq = tx.objectStore("weights").openCursor();
+        weightReq.onsuccess = () => {
+          const cursor = weightReq.result;
+          if (cursor) {
+            const date = cursor.key as string;
+            diary.set(date, { date, weight: cursor.value as number, meals: [] });
+            cursor.continue();
+          } else {
+            // Phase 2 — read all meal entries (only present from v2 onwards).
+            const flush = () => {
+              for (const entry of diary.values()) {
+                entry.meals.sort((a, b) => a.time.localeCompare(b.time));
+                diaryStore.put(entry);
+              }
+              db.deleteObjectStore("weights");
+              if (e.oldVersion >= 2) db.deleteObjectStore("meals");
+            };
+
+            if (e.oldVersion >= 2) {
+              const mealReq = tx.objectStore("meals").openCursor();
+              mealReq.onsuccess = () => {
+                const cursor = mealReq.result;
+                if (cursor) {
+                  const { dateKey: dk, time, description } =
+                    cursor.value as {
+                      dateKey: string;
+                      time: string;
+                      description: string;
+                    };
+                  if (!diary.has(dk)) {
+                    diary.set(dk, { date: dk, weight: null, meals: [] });
+                  }
+                  diary.get(dk)!.meals.push({ time, description });
+                  cursor.continue();
+                } else {
+                  flush();
+                }
+              };
+              mealReq.onerror = () => reject(mealReq.error);
+            } else {
+              flush();
+            }
+          }
+        };
+        weightReq.onerror = () => reject(weightReq.error);
       };
+
       req.onsuccess = () => resolve(req.result);
       req.onerror = () => reject(req.error);
     });
@@ -21,59 +88,60 @@ function openDB(): Promise<IDBDatabase> {
   return dbPromise;
 }
 
-function dateKey(date: Date): string {
+/** Convert a Date object to a YYYY-MM-DD string suitable for use as a diary key. */
+export function toDateKey(date: Date): string {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, "0");
   const d = String(date.getDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
 }
 
-export async function getWeight(date: Date): Promise<number | null> {
+export interface DiaryEntry {
+  date: string; // YYYY-MM-DD
+  weight: number | null;
+  meals: Array<{ time: string; description: string }>;
+}
+
+/** Fetch the diary entry for a given date key (YYYY-MM-DD). Returns null if none exists yet. */
+export async function getDiaryEntry(date: string): Promise<DiaryEntry | null> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const req = db
-      .transaction(WEIGHTS_STORE, "readonly")
-      .objectStore(WEIGHTS_STORE)
-      .get(dateKey(date));
-    req.onsuccess = () => resolve(req.result ?? null);
+      .transaction(DIARY_STORE, "readonly")
+      .objectStore(DIARY_STORE)
+      .get(date);
+    req.onsuccess = () => resolve((req.result as DiaryEntry) ?? null);
     req.onerror = () => reject(req.error);
   });
 }
 
-export async function setWeight(date: Date, weight: number): Promise<void> {
+/** Write (or overwrite) the diary entry for a given date key. */
+export async function saveDiaryEntry(
+  date: string,
+  data: Pick<DiaryEntry, "weight" | "meals">,
+): Promise<void> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const req = db
-      .transaction(WEIGHTS_STORE, "readwrite")
-      .objectStore(WEIGHTS_STORE)
-      .put(weight, dateKey(date));
+      .transaction(DIARY_STORE, "readwrite")
+      .objectStore(DIARY_STORE)
+      .put({ date, ...data });
     req.onsuccess = () => resolve();
     req.onerror = () => reject(req.error);
   });
 }
 
-export interface WeightEntry {
-  dateKey: string; // YYYY-MM-DD
-  weight: number;
-}
-
-export interface Meal {
-  dateKey: string; // YYYY-MM-DD
-  time: string; // HH:MM
-  description: string;
-}
-
-function cursorEntries(
+function cursorDiary(
   store: IDBObjectStore,
   range?: IDBKeyRange,
-): Promise<WeightEntry[]> {
+): Promise<DiaryEntry[]> {
   return new Promise((resolve, reject) => {
     const req = store.openCursor(range);
-    const entries: WeightEntry[] = [];
+    const entries: DiaryEntry[] = [];
     req.onsuccess = () => {
       const cursor = req.result;
       if (cursor) {
-        entries.push({ dateKey: cursor.key as string, weight: cursor.value });
+        entries.push(cursor.value as DiaryEntry);
         cursor.continue();
       } else {
         resolve(entries);
@@ -83,77 +151,25 @@ function cursorEntries(
   });
 }
 
-export async function getWeightEntriesForMonth(
+/** Return all diary entries for the given month (1-indexed). */
+export async function getDiaryEntriesForMonth(
   year: number,
   month: number,
-): Promise<WeightEntry[]> {
+): Promise<DiaryEntry[]> {
   const db = await openDB();
   const m = String(month).padStart(2, "0");
   const range = IDBKeyRange.bound(`${year}-${m}-01`, `${year}-${m}-31`);
-  return cursorEntries(
-    db.transaction(WEIGHTS_STORE, "readonly").objectStore(WEIGHTS_STORE),
+  return cursorDiary(
+    db.transaction(DIARY_STORE, "readonly").objectStore(DIARY_STORE),
     range,
   );
 }
 
-export async function getDaysWithWeightInMonth(
+/** Return the set of day-of-month numbers that have any diary data in the given month. */
+export async function getDaysWithDataInMonth(
   year: number,
   month: number,
 ): Promise<Set<number>> {
-  const entries = await getWeightEntriesForMonth(year, month);
-  return new Set(entries.map((e) => parseInt(e.dateKey.split("-")[2], 10)));
-}
-
-export async function getAllWeightEntries(): Promise<WeightEntry[]> {
-  const db = await openDB();
-  const entries = await cursorEntries(
-    db.transaction(WEIGHTS_STORE, "readonly").objectStore(WEIGHTS_STORE),
-  );
-  entries.sort((a, b) => a.dateKey.localeCompare(b.dateKey));
-  return entries;
-}
-
-export async function getMealsForDate(date: Date): Promise<Meal[]> {
-  const db = await openDB();
-  const dk = dateKey(date);
-  const range = IDBKeyRange.bound(`${dk} 00:00`, `${dk} 23:59`);
-  return new Promise((resolve, reject) => {
-    const store = db
-      .transaction(MEALS_STORE, "readonly")
-      .objectStore(MEALS_STORE);
-    const req = store.openCursor(range);
-    const meals: Meal[] = [];
-    req.onsuccess = () => {
-      const cursor = req.result;
-      if (cursor) {
-        meals.push(cursor.value as Meal);
-        cursor.continue();
-      } else {
-        resolve(meals);
-      }
-    };
-    req.onerror = () => reject(req.error);
-  });
-}
-
-export async function saveMealsForDate(
-  date: Date,
-  meals: Array<{ time: string; description: string }>,
-): Promise<void> {
-  const db = await openDB();
-  const dk = dateKey(date);
-  const range = IDBKeyRange.bound(`${dk} 00:00`, `${dk} 23:59`);
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(MEALS_STORE, "readwrite");
-    const store = tx.objectStore(MEALS_STORE);
-    const req = store.delete(range);
-    req.onsuccess = () => {
-      meals.forEach(({ time, description }) => {
-        store.put({ dateKey: dk, time, description }, `${dk} ${time}`);
-      });
-    };
-    req.onerror = () => reject(req.error);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
+  const entries = await getDiaryEntriesForMonth(year, month);
+  return new Set(entries.map((e) => parseInt(e.date.split("-")[2], 10)));
 }

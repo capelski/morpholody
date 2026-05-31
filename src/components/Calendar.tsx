@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import Day from "./Day";
-import { getDaysWithWeightInMonth } from "../storage";
+import { getDaysWithDataInMonth } from "../storage";
 import "./Calendar.css";
 
 const DAYS_OF_WEEK = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -38,7 +38,7 @@ export default function Calendar() {
   const firstDay = getFirstDayOfMonth(viewYear, viewMonth);
 
   useEffect(() => {
-    getDaysWithWeightInMonth(viewYear, viewMonth + 1).then(setDaysWithData);
+    getDaysWithDataInMonth(viewYear, viewMonth + 1).then(setDaysWithData);
   }, [viewYear, viewMonth]);
 
   function handleDayClick(day: number) {
@@ -176,7 +176,7 @@ export default function Calendar() {
           date={selectedDate}
           onClose={() => setSelectedDate(null)}
           onSaved={() => {
-            getDaysWithWeightInMonth(viewYear, viewMonth + 1).then(
+            getDaysWithDataInMonth(viewYear, viewMonth + 1).then(
               setDaysWithData,
             );
           }}

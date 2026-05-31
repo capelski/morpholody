@@ -1,10 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import {
-  getWeight,
-  setWeight,
-  getMealsForDate,
-  saveMealsForDate,
-} from "../storage";
+import { toDateKey, getDiaryEntry, saveDiaryEntry } from "../storage";
 import "./Day.css";
 
 interface MealEntry {
@@ -33,10 +28,10 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
     setMeals([]);
     setNewDesc("");
     setEditingIndex(null);
-    getWeight(date).then((w) => setWeightStr(w !== null ? String(w) : ""));
-    getMealsForDate(date).then((m) =>
-      setMeals(m.map(({ time, description }) => ({ time, description }))),
-    );
+    getDiaryEntry(toDateKey(date)).then((entry) => {
+      setWeightStr(entry?.weight != null ? String(entry.weight) : "");
+      setMeals(entry?.meals ?? []);
+    });
   }, [date]);
 
   useEffect(() => {
@@ -93,11 +88,9 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
-    await saveMealsForDate(date, meals);
     const value = parseFloat(weightStr);
-    if (!isNaN(value) && value > 0) {
-      await setWeight(date, value);
-    }
+    const weight = !isNaN(value) && value > 0 ? value : null;
+    await saveDiaryEntry(toDateKey(date), { weight, meals });
     onSaved?.();
     onClose();
   }

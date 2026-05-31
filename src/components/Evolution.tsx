@@ -9,7 +9,7 @@ import {
   ResponsiveContainer,
   Dot,
 } from "recharts";
-import { getWeightEntriesForMonth } from "../storage";
+import { getDiaryEntriesForMonth } from "../storage";
 import "./Evolution.css";
 
 interface ChartPoint {
@@ -56,9 +56,9 @@ export default function Evolution() {
   const [data, setData] = useState<ChartPoint[]>([]);
 
   useEffect(() => {
-    getWeightEntriesForMonth(year, month).then((entries) => {
+    getDiaryEntriesForMonth(year, month).then((entries) => {
       const daysInMonth = new Date(year, month, 0).getDate();
-      const entryMap = new Map(entries.map((e) => [e.dateKey, e.weight]));
+      const entryMap = new Map(entries.map((e) => [e.date, e.weight]));
       setData(
         Array.from({ length: daysInMonth }, (_, i) => {
           const day = i + 1;
