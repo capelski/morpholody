@@ -69,7 +69,8 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
   }
 
   function addMeal() {
-    if (!newDesc.trim() || meals.some((m) => m.time === newTime)) return;
+    const hasContent = newDesc.trim() !== "" || parseCal(newCalStr) !== null;
+    if (!hasContent || meals.some((m) => m.time === newTime)) return;
     const entry: MealEntry = {
       time: newTime,
       description: newDesc.trim(),
@@ -250,7 +251,10 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
                 type="button"
                 className="day-meal-add-btn"
                 onClick={addMeal}
-                disabled={!newDesc.trim() || newTimeConflict}
+                disabled={
+                  (newDesc.trim() === "" && parseCal(newCalStr) === null) ||
+                  newTimeConflict
+                }
               >
                 Add
               </button>
