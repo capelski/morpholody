@@ -133,11 +133,16 @@
   background: #ffffff;
 }
 
-.day-cell.has-data {
+/* Data indicator dots */
+.day-cell.has-weight-only,
+.day-cell.has-meals-only,
+.day-cell.has-both {
   position: relative;
 }
 
-.day-cell.has-data::before {
+.day-cell.has-weight-only::before,
+.day-cell.has-meals-only::before,
+.day-cell.has-both::before {
   content: "";
   position: absolute;
   bottom: 5px;
@@ -145,14 +150,33 @@
   width: 5px;
   height: 5px;
   border-radius: 50%;
+}
+
+/* Blue — weight only (never shown on today) */
+.day-cell.has-weight-only::before {
+  background: #3182ce;
+}
+
+/* Orange — meals only */
+.day-cell.has-meals-only::before {
+  background: #dd6b20;
+}
+
+/* Green — weight + meals */
+.day-cell.has-both::before {
   background: #48bb78;
 }
 
-.day-cell.today.has-data::before {
+/* Shift data dot right when the today dot is also present */
+.day-cell.today.has-meals-only::before,
+.day-cell.today.has-both::before {
   left: calc(50% + 2px);
 }
 
-.day-cell.selected.has-data::before {
+/* Fade dot when the cell is selected */
+.day-cell.selected.has-weight-only::before,
+.day-cell.selected.has-meals-only::before,
+.day-cell.selected.has-both::before {
   background: rgba(255, 255, 255, 0.8);
 }
 

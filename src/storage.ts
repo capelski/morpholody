@@ -172,11 +172,19 @@ export async function getDiaryEntriesForMonth(
   );
 }
 
-/** Return the set of day-of-month numbers that have any diary data in the given month. */
-export async function getDaysWithDataInMonth(
+/** Return a map from day-of-month to the kinds of data recorded for that day. */
+export async function getDayDataForMonth(
   year: number,
   month: number,
-): Promise<Set<number>> {
+): Promise<Map<number, { hasWeight: boolean; hasMeals: boolean }>> {
   const entries = await getDiaryEntriesForMonth(year, month);
-  return new Set(entries.map((e) => parseInt(e.date.split("-")[2], 10)));
+  const map = new Map<number, { hasWeight: boolean; hasMeals: boolean }>();
+  for (const entry of entries) {
+    const day = parseInt(entry.date.split("-")[2], 10);
+    map.set(day, {
+      hasWeight: entry.weight != null,
+      hasMeals: entry.meals.length > 0,
+    });
+  }
+  return map;
 }

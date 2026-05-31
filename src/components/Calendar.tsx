@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import Day from "./Day";
-import { getDaysWithDataInMonth } from "../storage";
+import { getDayDataForMonth } from "../storage";
 import "./Calendar.css";
 
 const DAYS_OF_WEEK = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -32,18 +32,19 @@ export default function Calendar() {
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [daysWithData, setDaysWithData] = useState<Set<number>>(new Set());
+  const [dayData, setDayData] = useState<
+    Map<number, { hasWeight: boolean; hasMeals: boolean }>
+  >(new Map());
 
   const daysInMonth = getDaysInMonth(viewYear, viewMonth);
   const firstDay = getFirstDayOfMonth(viewYear, viewMonth);
 
   useEffect(() => {
-    getDaysWithDataInMonth(viewYear, viewMonth + 1).then(setDaysWithData);
+    getDayDataForMonth(viewYear, viewMonth + 1).then(setDayData);
   }, [viewYear, viewMonth]);
 
   function handleDayClick(day: number) {
     const date = new Date(viewYear, viewMonth, day);
-    // Clicking the selected day again closes the panel.
     if (
       selectedDate &&
       selectedDate.getDate() === day &&
@@ -99,6 +100,17 @@ export default function Calendar() {
     );
   }
 
+  function dotClass(day: number): string {
+    const info = dayData.get(day);
+    if (!info) return "";
+    const { hasWeight, hasMeals } = info;
+    if (hasWeight && hasMeals) return "has-both";
+    if (hasMeals) return "has-meals-only";
+    // Blue dot suppressed for today (weight-only).
+    if (hasWeight && !isToday(day)) return "has-weight-only";
+    return "";
+  }
+
   const cells: (number | null)[] = [
     ...Array(firstDay).fill(null),
     ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
@@ -146,7 +158,7 @@ export default function Calendar() {
                 day === null ? "empty" : "",
                 day !== null && isToday(day) ? "today" : "",
                 day !== null && isSelected(day) ? "selected" : "",
-                day !== null && daysWithData.has(day) ? "has-data" : "",
+                day !== null ? dotClass(day) : "",
               ]
                 .filter(Boolean)
                 .join(" ")}
@@ -176,9 +188,7 @@ export default function Calendar() {
           date={selectedDate}
           onClose={() => setSelectedDate(null)}
           onSaved={() => {
-            getDaysWithDataInMonth(viewYear, viewMonth + 1).then(
-              setDaysWithData,
-            );
+            getDayDataForMonth(viewYear, viewMonth + 1).then(setDayData);
           }}
         />
       )}
