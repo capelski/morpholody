@@ -1,5 +1,11 @@
 import { useEffect, useRef, useState } from "react";
+import { getMealsForDate, saveMealsForDate } from "../storage";
 import "./Modal.css";
+
+interface MealEntry {
+  time: string;
+  description: string;
+}
 
 interface ModalProps {
   date: Date;
@@ -17,11 +23,20 @@ export default function Modal({
   const [weight, setWeight] = useState(
     initialWeight !== null ? String(initialWeight) : "",
   );
+  const [meals, setMeals] = useState<MealEntry[]>([]);
+  const [newTime, setNewTime] = useState("12:00");
+  const [newDesc, setNewDesc] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
+
+  useEffect(() => {
+    getMealsForDate(date).then((fetched) =>
+      setMeals(fetched.map(({ time, description }) => ({ time, description }))),
+    );
+  }, [date]);
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -31,13 +46,28 @@ export default function Modal({
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
 
-  function handleSubmit(e: React.FormEvent) {
+  function addMeal() {
+    if (!newDesc.trim()) return;
+    const entry: MealEntry = { time: newTime, description: newDesc.trim() };
+    setMeals((prev) => {
+      const without = prev.filter((m) => m.time !== newTime);
+      return [...without, entry].sort((a, b) => a.time.localeCompare(b.time));
+    });
+    setNewDesc("");
+  }
+
+  function removeMeal(index: number) {
+    setMeals((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    await saveMealsForDate(date, meals);
     const value = parseFloat(weight);
     if (!isNaN(value) && value > 0) {
       onSave(value);
-      onClose();
     }
+    onClose();
   }
 
   const label = date.toLocaleDateString("en-US", {
@@ -46,6 +76,9 @@ export default function Modal({
     day: "numeric",
     year: "numeric",
   });
+
+  const weightValid = weight !== "" && parseFloat(weight) > 0;
+  const canSave = weightValid || meals.length > 0;
 
   return (
     <div className="modal-backdrop" onPointerDown={onClose}>
@@ -89,15 +122,64 @@ export default function Modal({
             </div>
           </div>
 
+          <div className="field">
+            <span className="field-label">Meals</span>
+            {meals.length > 0 && (
+              <ul className="meals-list">
+                {meals.map((meal, i) => (
+                  <li key={meal.time} className="meal-row">
+                    <span className="meal-time">{meal.time}</span>
+                    <span className="meal-desc">{meal.description}</span>
+                    <button
+                      type="button"
+                      className="meal-delete"
+                      onClick={() => removeMeal(i)}
+                      aria-label={`Remove meal at ${meal.time}`}
+                    >
+                      &#10005;
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <div className="meal-add-row">
+              <input
+                type="time"
+                className="meal-time-input"
+                value={newTime}
+                onChange={(e) => setNewTime(e.target.value)}
+                aria-label="Meal time"
+              />
+              <input
+                type="text"
+                className="meal-desc-input"
+                placeholder="What did you eat?"
+                value={newDesc}
+                onChange={(e) => setNewDesc(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addMeal();
+                  }
+                }}
+                aria-label="Meal description"
+              />
+              <button
+                type="button"
+                className="meal-add-btn"
+                onClick={addMeal}
+                disabled={!newDesc.trim()}
+              >
+                Add
+              </button>
+            </div>
+          </div>
+
           <div className="modal-actions">
             <button type="button" className="btn-cancel" onClick={onClose}>
               Cancel
             </button>
-            <button
-              type="submit"
-              className="btn-save"
-              disabled={weight === "" || parseFloat(weight) <= 0}
-            >
+            <button type="submit" className="btn-save" disabled={!canSave}>
               Save
             </button>
           </div>

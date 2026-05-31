@@ -22,8 +22,10 @@
   background: #ffffff;
   border-radius: 16px;
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.18);
-  width: 340px;
+  width: 420px;
   max-width: calc(100vw - 2rem);
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
   animation: modal-in 0.15s ease;
 }
 
@@ -136,6 +138,131 @@
   border-left: 1.5px solid #e2e8f0;
   line-height: 2.5rem;
   background: #f7fafc;
+}
+
+/* Meals */
+.meals-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.meal-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.6rem;
+  background: #f7fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.meal-time {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #4a5568;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.meal-desc {
+  flex: 1;
+  font-size: 0.875rem;
+  color: #1a202c;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meal-delete {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #a0aec0;
+  font-size: 0.7rem;
+  padding: 0.15rem 0.25rem;
+  line-height: 1;
+  border-radius: 4px;
+  transition: color 0.12s;
+}
+
+.meal-delete:hover {
+  color: #e53e3e;
+}
+
+.meal-add-row {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.meal-time-input {
+  width: 88px;
+  flex-shrink: 0;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.5rem 0.4rem;
+  font-size: 0.875rem;
+  font-family: inherit;
+  color: #1a202c;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.meal-time-input:focus {
+  border-color: #3182ce;
+}
+
+.meal-desc-input {
+  flex: 1;
+  min-width: 0;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.5rem 0.6rem;
+  font-size: 0.875rem;
+  font-family: inherit;
+  color: #1a202c;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.meal-desc-input:focus {
+  border-color: #3182ce;
+}
+
+.meal-add-btn {
+  flex-shrink: 0;
+  background: none;
+  border: 1.5px solid #3182ce;
+  color: #3182ce;
+  border-radius: 8px;
+  padding: 0.45rem 0.7rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    color 0.12s,
+    border-color 0.12s;
+}
+
+.meal-add-btn:hover:not(:disabled) {
+  background: #ebf8ff;
+}
+
+.meal-add-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  border-color: #a0aec0;
+  color: #a0aec0;
 }
 
 /* Actions */
