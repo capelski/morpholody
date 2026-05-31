@@ -24,6 +24,12 @@ function nowHHMM(): string {
   return `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
 }
 
+function nextMinute(hhmm: string): string {
+  const [h, m] = hhmm.split(":").map(Number);
+  const total = h * 60 + m + 1;
+  return `${String(Math.floor(total / 60) % 24).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+}
+
 export default function Day({ date, onClose, onSaved }: DayProps) {
   const [weightStr, setWeightStr] = useState("");
   const [meals, setMeals] = useState<MealEntry[]>([]);
@@ -79,6 +85,7 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
     setMeals((prev) =>
       [...prev, entry].sort((a, b) => a.time.localeCompare(b.time)),
     );
+    setNewTime(nextMinute(newTime));
     setNewDesc("");
     setNewCalStr("");
   }
