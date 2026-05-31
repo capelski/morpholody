@@ -176,6 +176,25 @@
   white-space: nowrap;
 }
 
+/* Clickable content area that triggers edit */
+.day-meal-content {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+}
+
+.day-meal-content:hover .day-meal-desc {
+  color: #3182ce;
+}
+
 .day-meal-delete {
   flex-shrink: 0;
   background: none;
@@ -190,6 +209,49 @@
 }
 
 .day-meal-delete:hover {
+  color: #e53e3e;
+}
+
+/* Inline edit row */
+.day-meal-row--editing {
+  background: #ebf8ff;
+  border-color: #bee3f8;
+  gap: 0.4rem;
+  padding: 0.3rem 0.4rem;
+}
+
+.day-meal-row--editing .day-meal-time-input,
+.day-meal-row--editing .day-meal-desc-input {
+  padding-top: 0.2rem;
+  padding-bottom: 0.2rem;
+}
+
+.day-meal-confirm,
+.day-meal-cancel-edit {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.8rem;
+  padding: 0.15rem 0.25rem;
+  line-height: 1;
+  border-radius: 4px;
+  transition: color 0.12s;
+}
+
+.day-meal-confirm {
+  color: #38a169;
+}
+
+.day-meal-confirm:hover {
+  color: #276749;
+}
+
+.day-meal-cancel-edit {
+  color: #a0aec0;
+}
+
+.day-meal-cancel-edit:hover {
   color: #e53e3e;
 }
 
