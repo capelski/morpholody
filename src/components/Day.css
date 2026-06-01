@@ -143,22 +143,52 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
-  max-height: 180px;
+  gap: 0.5rem;
+  max-height: 340px;
   overflow-y: auto;
 }
 
-.day-meal-row {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.3rem 0.4rem;
+/* Meal card */
+.day-meal-card {
   background: #f7fafc;
   border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  border-radius: 10px;
+  padding: 0.4rem 0.5rem 0.3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
-/* Ghost-border inputs inside existing meal rows */
+.day-meal-card--ghost {
+  background: transparent;
+  border-style: dashed;
+  border-color: #cbd5e0;
+}
+
+.day-meal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+}
+
+/* Component list inside a meal card */
+.day-components {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 0.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.day-component-row {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+/* Ghost-border inputs */
 .day-meal-field {
   border: 1.5px solid transparent;
   border-radius: 6px;
@@ -193,19 +223,13 @@
   font-variant-numeric: tabular-nums;
 }
 
-.day-meal-field--desc {
+.day-component-field--name {
   flex: 1;
 }
 
-.day-meal-field--cal {
-  width: 64px;
+.day-component-field--qty {
+  width: 72px;
   flex-shrink: 0;
-  -moz-appearance: textfield;
-}
-
-.day-meal-field--cal::-webkit-outer-spin-button,
-.day-meal-field--cal::-webkit-inner-spin-button {
-  -webkit-appearance: none;
 }
 
 .day-meal-delete {
@@ -223,12 +247,6 @@
 
 .day-meal-delete:hover {
   color: #e53e3e;
-}
-
-.day-meal-row--ghost {
-  background: transparent;
-  border-style: dashed;
-  border-color: #cbd5e0;
 }
 
 .day-meal-conflict {

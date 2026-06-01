@@ -96,12 +96,18 @@ export function toDateKey(date: Date): string {
   return `${y}-${m}-${d}`;
 }
 
+export interface MealComponent {
+  name: string;
+  quantity: string;
+  calories: number | null;
+}
+
 export interface DiaryEntry {
   date: string; // YYYY-MM-DD
   weight: number | null;
-  /** Sum of calories across all meals; null when no meal has a calorie value. */
+  /** Kept for backward compatibility with older entries; always null for new saves. */
   calories: number | null;
-  meals: Array<{ time: string; description: string; calories: number | null }>;
+  meals: Array<{ time: string; components: MealComponent[] }>;
 }
 
 /** Fetch the diary entry for a given date key (YYYY-MM-DD). Returns null if none exists yet. */
@@ -117,16 +123,12 @@ export async function getDiaryEntry(date: string): Promise<DiaryEntry | null> {
   });
 }
 
-/** Write (or overwrite) the diary entry for a given date key.
- *  The top-level `calories` field is computed from the meals array automatically. */
+/** Write (or overwrite) the diary entry for a given date key. */
 export async function saveDiaryEntry(
   date: string,
   data: Pick<DiaryEntry, "weight" | "meals">,
 ): Promise<void> {
-  const calories = data.meals.reduce<number | null>((sum, m) => {
-    if (m.calories == null) return sum;
-    return (sum ?? 0) + m.calories;
-  }, null);
+  const calories = null;
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const req = db

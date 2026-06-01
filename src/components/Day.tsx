@@ -2,21 +2,20 @@ import { useEffect, useRef, useState } from "react";
 import { toDateKey, getDiaryEntry, saveDiaryEntry } from "../storage";
 import "./Day.css";
 
+interface ComponentEntry {
+  name: string;
+  quantity: string;
+}
+
 interface MealEntry {
   time: string;
-  description: string;
-  calories: number | null;
+  components: ComponentEntry[];
 }
 
 interface DayProps {
   date: Date;
   onClose: () => void;
   onSaved?: () => void;
-}
-
-function parseCal(s: string): number | null {
-  const v = parseInt(s, 10);
-  return !isNaN(v) && v > 0 ? v : null;
 }
 
 function nowHHMM(): string {
@@ -30,30 +29,39 @@ function nextMinute(hhmm: string): string {
   return `${String(Math.floor(total / 60) % 24).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
 }
 
-function ghostEntry(afterTime?: string): MealEntry {
+function ghostComponent(): ComponentEntry {
+  return { name: "", quantity: "" };
+}
+
+function ghostMeal(afterTime?: string): MealEntry {
   const now = nowHHMM();
   const time = afterTime === now ? nextMinute(afterTime) : now;
-  return { time, description: "", calories: null };
+  return { time, components: [ghostComponent()] };
+}
+
+function isMealEmpty(meal: MealEntry): boolean {
+  return meal.components.every((c) => c.name.trim() === "" && c.quantity.trim() === "");
 }
 
 export default function Day({ date, onClose, onSaved }: DayProps) {
   const [weightStr, setWeightStr] = useState("");
-  // meals always ends with a ghost row (empty description and null calories)
-  const [meals, setMeals] = useState<MealEntry[]>([ghostEntry()]);
+  const [meals, setMeals] = useState<MealEntry[]>([ghostMeal()]);
   const weightRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setWeightStr("");
-    setMeals([ghostEntry()]);
+    setMeals([ghostMeal()]);
     getDiaryEntry(toDateKey(date)).then((entry) => {
       setWeightStr(entry?.weight != null ? String(entry.weight) : "");
-      const loaded = (entry?.meals ?? []).map(({ time, description, calories }) => ({
-        time,
-        description,
-        calories: calories ?? null,
+      const loaded = (entry?.meals ?? []).map((m) => ({
+        time: m.time,
+        components:
+          m.components && m.components.length > 0
+            ? [...m.components, ghostComponent()]
+            : [ghostComponent()],
       }));
       const last = loaded[loaded.length - 1];
-      setMeals([...loaded, ghostEntry(last?.time)]);
+      setMeals([...loaded, ghostMeal(last?.time)]);
     });
   }, [date]);
 
@@ -69,25 +77,59 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
 
-  function updateMeal(index: number, patch: Partial<MealEntry>) {
+  function updateMealTime(mealIndex: number, time: string) {
+    setMeals((prev) => prev.map((m, i) => (i === mealIndex ? { ...m, time } : m)));
+  }
+
+  function updateComponent(
+    mealIndex: number,
+    compIndex: number,
+    patch: Partial<ComponentEntry>,
+  ) {
     setMeals((prev) => {
-      const updated = prev.map((m, i) => (i === index ? { ...m, ...patch } : m));
-      const isLast = index === prev.length - 1;
-      if (isLast) {
-        const was = prev[index];
-        const now = updated[index];
-        const wasEmpty = was.description.trim() === "" && was.calories === null;
-        const hasContent = now.description.trim() !== "" || now.calories !== null;
-        if (wasEmpty && hasContent) {
-          return [...updated, ghostEntry(now.time)];
-        }
+      const updated = prev.map((meal, mi) => {
+        if (mi !== mealIndex) return meal;
+        const updatedComps = meal.components.map((c, ci) =>
+          ci === compIndex ? { ...c, ...patch } : c,
+        );
+        const isLastComp = compIndex === meal.components.length - 1;
+        const wasEmpty =
+          meal.components[compIndex].name.trim() === "" &&
+          meal.components[compIndex].quantity.trim() === "";
+        const patchedComp = updatedComps[compIndex];
+        const hasContent =
+          patchedComp.name.trim() !== "" || patchedComp.quantity.trim() !== "";
+
+        const newComps =
+          isLastComp && wasEmpty && hasContent
+            ? [...updatedComps, ghostComponent()]
+            : updatedComps;
+
+        return { ...meal, components: newComps };
+      });
+
+      // If the last meal was a ghost and now has content, append a new ghost meal
+      const lastMeal = updated[updated.length - 1];
+      const prevLastMeal = prev[prev.length - 1];
+      if (isMealEmpty(prevLastMeal) && !isMealEmpty(lastMeal)) {
+        return [...updated, ghostMeal(lastMeal.time)];
       }
       return updated;
     });
   }
 
-  function removeMeal(index: number) {
-    setMeals((prev) => prev.filter((_, i) => i !== index));
+  function removeComponent(mealIndex: number, compIndex: number) {
+    setMeals((prev) =>
+      prev.map((meal, mi) => {
+        if (mi !== mealIndex) return meal;
+        const filtered = meal.components.filter((_, ci) => ci !== compIndex);
+        return { ...meal, components: filtered.length > 0 ? filtered : [ghostComponent()] };
+      }),
+    );
+  }
+
+  function removeMeal(mealIndex: number) {
+    setMeals((prev) => prev.filter((_, i) => i !== mealIndex));
   }
 
   async function handleSave(e: React.FormEvent) {
@@ -95,7 +137,11 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
     const value = parseFloat(weightStr);
     const weight = !isNaN(value) && value > 0 ? value : null;
     const mealsToSave = meals
-      .filter((m) => m.description.trim() !== "" || m.calories !== null)
+      .filter((m) => !isMealEmpty(m))
+      .map((m) => ({
+        time: m.time,
+        components: m.components.filter((c) => c.name.trim() !== "" || c.quantity.trim() !== ""),
+      }))
       .sort((a, b) => a.time.localeCompare(b.time));
     await saveDiaryEntry(toDateKey(date), { weight, meals: mealsToSave });
     onSaved?.();
@@ -162,52 +208,72 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
             <span className="day-field-label">Meals</span>
 
             <ul className="day-meals">
-              {meals.map((meal, i) => {
-                const isGhost = i === meals.length - 1;
+              {meals.map((meal, mi) => {
+                const isGhostMeal = mi === meals.length - 1;
                 return (
                   <li
-                    key={i}
-                    className={`day-meal-row${isGhost ? " day-meal-row--ghost" : ""}`}
+                    key={mi}
+                    className={`day-meal-card${isGhostMeal ? " day-meal-card--ghost" : ""}`}
                   >
-                    <input
-                      type="time"
-                      className="day-meal-field day-meal-field--time"
-                      value={meal.time}
-                      onChange={(e) => updateMeal(i, { time: e.target.value })}
-                      aria-label="Meal time"
-                    />
-                    <input
-                      type="text"
-                      className="day-meal-field day-meal-field--desc"
-                      placeholder={isGhost ? "What did you eat?" : ""}
-                      value={meal.description}
-                      onChange={(e) =>
-                        updateMeal(i, { description: e.target.value })
-                      }
-                      aria-label="Meal description"
-                    />
-                    <input
-                      type="number"
-                      className="day-meal-field day-meal-field--cal"
-                      placeholder="kcal"
-                      min="1"
-                      step="1"
-                      value={meal.calories != null ? String(meal.calories) : ""}
-                      onChange={(e) =>
-                        updateMeal(i, { calories: parseCal(e.target.value) })
-                      }
-                      aria-label="Calories"
-                    />
-                    {!isGhost && (
-                      <button
-                        type="button"
-                        className="day-meal-delete"
-                        onClick={() => removeMeal(i)}
-                        aria-label={`Remove meal at ${meal.time}`}
-                      >
-                        &#10005;
-                      </button>
-                    )}
+                    <div className="day-meal-header">
+                      <input
+                        type="time"
+                        className="day-meal-field day-meal-field--time"
+                        value={meal.time}
+                        onChange={(e) => updateMealTime(mi, e.target.value)}
+                        aria-label="Meal time"
+                      />
+                      {!isGhostMeal && (
+                        <button
+                          type="button"
+                          className="day-meal-delete"
+                          onClick={() => removeMeal(mi)}
+                          aria-label={`Remove meal at ${meal.time}`}
+                        >
+                          &#10005;
+                        </button>
+                      )}
+                    </div>
+
+                    <ul className="day-components">
+                      {meal.components.map((comp, ci) => {
+                        const isGhostComp = ci === meal.components.length - 1;
+                        return (
+                          <li key={ci} className="day-component-row">
+                            <input
+                              type="text"
+                              className="day-meal-field day-component-field--name"
+                              placeholder={isGhostComp ? "Component" : ""}
+                              value={comp.name}
+                              onChange={(e) =>
+                                updateComponent(mi, ci, { name: e.target.value })
+                              }
+                              aria-label="Component name"
+                            />
+                            <input
+                              type="text"
+                              className="day-meal-field day-component-field--qty"
+                              placeholder={isGhostComp ? "Qty" : ""}
+                              value={comp.quantity}
+                              onChange={(e) =>
+                                updateComponent(mi, ci, { quantity: e.target.value })
+                              }
+                              aria-label="Quantity"
+                            />
+                            {!isGhostComp && (
+                              <button
+                                type="button"
+                                className="day-meal-delete"
+                                onClick={() => removeComponent(mi, ci)}
+                                aria-label={`Remove ${comp.name}`}
+                              >
+                                &#10005;
+                              </button>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ul>
                   </li>
                 );
               })}
