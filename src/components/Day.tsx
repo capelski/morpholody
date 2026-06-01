@@ -229,6 +229,15 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
                         onChange={(e) => updateMealTime(mi, e.target.value)}
                         aria-label="Meal time"
                       />
+                      {!isGhostMeal && (() => {
+                        const total = meal.components.reduce<number | null>((s, c) => {
+                          if (c.calories == null) return s;
+                          return (s ?? 0) + c.calories;
+                        }, null);
+                        return total != null ? (
+                          <span className="day-meal-total">{total} kcal</span>
+                        ) : null;
+                      })()}
                       {!isGhostMeal && (
                         <button
                           type="button"

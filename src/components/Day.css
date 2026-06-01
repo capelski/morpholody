@@ -243,6 +243,14 @@
   -webkit-appearance: none;
 }
 
+.day-meal-total {
+  margin-left: auto;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #718096;
+  font-variant-numeric: tabular-nums;
+}
+
 .day-meal-delete {
   flex-shrink: 0;
   background: none;
