@@ -87,6 +87,17 @@
   gap: 0.4rem;
 }
 
+.day-meals-label-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.day-day-total {
+  font-variant-numeric: tabular-nums;
+  color: #4a5568;
+}
+
 .day-field-label {
   font-size: 0.8rem;
   font-weight: 600;

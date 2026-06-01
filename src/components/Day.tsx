@@ -166,6 +166,14 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
   const hasDuplicateTimes = mealTimes.length !== new Set(mealTimes).size;
   const weightValid = weightStr !== "" && parseFloat(weightStr) > 0;
   const canSave = (weightValid || committed.length > 0) && !hasDuplicateTimes;
+  const dayCalories = meals.reduce<number | null>((daySum, meal) => {
+    const mealTotal = meal.components.reduce<number | null>((s, c) => {
+      if (c.calories == null) return s;
+      return (s ?? 0) + c.calories;
+    }, null);
+    if (mealTotal == null) return daySum;
+    return (daySum ?? 0) + mealTotal;
+  }, null);
 
   return (
     <div className="day-overlay" onPointerDown={onClose}>
@@ -211,7 +219,12 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
           </div>
 
           <div className="day-field">
-            <span className="day-field-label">Meals</span>
+            <div className="day-meals-label-row">
+              <span className="day-field-label">Meals</span>
+              {dayCalories != null && (
+                <span className="day-field-label day-day-total">{dayCalories} kcal</span>
+              )}
+            </div>
 
             <ul className="day-meals">
               {meals.map((meal, mi) => {
