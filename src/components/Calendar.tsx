@@ -1,22 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Day from "./Day";
 import { getDayDataForMonth } from "../storage";
 import "./Calendar.css";
 
 const DAYS_OF_WEEK = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTHS = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
 ];
 
 function getDaysInMonth(year: number, month: number): number {
@@ -27,20 +17,34 @@ function getFirstDayOfMonth(year: number, month: number): number {
   return new Date(year, month, 1).getDay();
 }
 
-export default function Calendar() {
+interface CalendarProps {
+  viewYear: number;
+  viewMonth: number;
+  onMonthChange: (year: number, month: number) => void;
+}
+
+export default function Calendar({ viewYear, viewMonth, onMonthChange }: CalendarProps) {
   const today = new Date();
-  const [viewYear, setViewYear] = useState(today.getFullYear());
-  const [viewMonth, setViewMonth] = useState(today.getMonth());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [dayData, setDayData] = useState<
     Map<number, { hasWeight: boolean; hasMeals: boolean }>
   >(new Map());
+  const skipClearRef = useRef(false);
 
   const daysInMonth = getDaysInMonth(viewYear, viewMonth);
   const firstDay = getFirstDayOfMonth(viewYear, viewMonth);
 
   useEffect(() => {
     getDayDataForMonth(viewYear, viewMonth + 1).then(setDayData);
+  }, [viewYear, viewMonth]);
+
+  // Clear selection when the month changes via navigation, but not when goToToday triggers it.
+  useEffect(() => {
+    if (skipClearRef.current) {
+      skipClearRef.current = false;
+      return;
+    }
+    setSelectedDate(null);
   }, [viewYear, viewMonth]);
 
   function handleDayClick(day: number) {
@@ -57,29 +61,9 @@ export default function Calendar() {
     }
   }
 
-  function prevMonth() {
-    setSelectedDate(null);
-    if (viewMonth === 0) {
-      setViewMonth(11);
-      setViewYear((y) => y - 1);
-    } else {
-      setViewMonth((m) => m - 1);
-    }
-  }
-
-  function nextMonth() {
-    setSelectedDate(null);
-    if (viewMonth === 11) {
-      setViewMonth(0);
-      setViewYear((y) => y + 1);
-    } else {
-      setViewMonth((m) => m + 1);
-    }
-  }
-
   function goToToday() {
-    setViewYear(today.getFullYear());
-    setViewMonth(today.getMonth());
+    skipClearRef.current = true;
+    onMonthChange(today.getFullYear(), today.getMonth());
     setSelectedDate(today);
   }
 
@@ -120,27 +104,6 @@ export default function Calendar() {
   return (
     <>
       <div className="calendar">
-        <div className="calendar-header">
-          <button
-            className="nav-btn"
-            onClick={prevMonth}
-            aria-label="Previous month"
-          >
-            &#8249;
-          </button>
-          <div className="month-year">
-            <span className="month-name">{MONTHS[viewMonth]}</span>
-            <span className="year">{viewYear}</span>
-          </div>
-          <button
-            className="nav-btn"
-            onClick={nextMonth}
-            aria-label="Next month"
-          >
-            &#8250;
-          </button>
-        </div>
-
         <div className="calendar-weekdays">
           {DAYS_OF_WEEK.map((d) => (
             <div key={d} className="weekday">

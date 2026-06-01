@@ -7,55 +7,6 @@
   user-select: none;
 }
 
-/* Header */
-.calendar-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 1.25rem;
-}
-
-.month-year {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  line-height: 1.2;
-}
-
-.month-name {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #1a202c;
-}
-
-.year {
-  font-size: 0.8rem;
-  color: #718096;
-  font-weight: 500;
-}
-
-.nav-btn {
-  background: none;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  width: 36px;
-  height: 36px;
-  font-size: 1.4rem;
-  cursor: pointer;
-  color: #4a5568;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition:
-    background 0.15s,
-    border-color 0.15s;
-}
-
-.nav-btn:hover {
-  background: #f7fafc;
-  border-color: #cbd5e0;
-}
-
 /* Weekdays */
 .calendar-weekdays {
   display: grid;

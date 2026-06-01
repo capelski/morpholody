@@ -64,22 +64,25 @@ function CustomTooltip({
   );
 }
 
-export default function Evolution() {
-  const today = new Date();
-  const [year, setYear] = useState(today.getFullYear());
-  const [month, setMonth] = useState(today.getMonth() + 1);
+interface EvolutionProps {
+  viewYear: number;
+  viewMonth: number; // 0-indexed
+}
+
+export default function Evolution({ viewYear, viewMonth }: EvolutionProps) {
+  const month = viewMonth + 1; // storage uses 1-indexed months
 
   const [data, setData] = useState<ChartPoint[]>([]);
 
   useEffect(() => {
-    getDiaryEntriesForMonth(year, month).then((entries) => {
-      const daysInMonth = new Date(year, month, 0).getDate();
+    getDiaryEntriesForMonth(viewYear, month).then((entries) => {
+      const daysInMonth = new Date(viewYear, month, 0).getDate();
       const weightMap = new Map(entries.map((e) => [e.date, e.weight]));
       const calMap = new Map(entries.map((e) => [e.date, e.calories]));
       setData(
         Array.from({ length: daysInMonth }, (_, i) => {
           const day = i + 1;
-          const dk = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+          const dk = `${viewYear}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
           return {
             dateKey: dk,
             label: String(day),
@@ -89,7 +92,7 @@ export default function Evolution() {
         }),
       );
     });
-  }, [year, month]);
+  }, [viewYear, month]);
 
   const weights = data
     .map((d) => d.weight)
@@ -109,24 +112,6 @@ export default function Evolution() {
     ? Math.ceil(Math.max(...caloriesValues) + 100)
     : 3000;
 
-  const monthLabel = new Date(year, month - 1, 1).toLocaleDateString("en-US", {
-    month: "long",
-    year: "numeric",
-  });
-
-  const prevMonth = () => {
-    if (month === 1) {
-      setMonth(12);
-      setYear((y) => y - 1);
-    } else setMonth((m) => m - 1);
-  };
-  const nextMonth = () => {
-    if (month === 12) {
-      setMonth(1);
-      setYear((y) => y + 1);
-    } else setMonth((m) => m + 1);
-  };
-
   return (
     <div className="evolution">
       <div className="evolution-header">
@@ -134,23 +119,6 @@ export default function Evolution() {
         <span className="evolution-count">
           {weights.length} {weights.length === 1 ? "entry" : "entries"}
         </span>
-      </div>
-      <div className="evolution-month-nav">
-        <button
-          className="evolution-month-btn"
-          onClick={prevMonth}
-          aria-label="Previous month"
-        >
-          ‹
-        </button>
-        <span className="evolution-month-label">{monthLabel}</span>
-        <button
-          className="evolution-month-btn"
-          onClick={nextMonth}
-          aria-label="Next month"
-        >
-          ›
-        </button>
       </div>
       <div className="evolution-chart">
         <ResponsiveContainer width="100%" height={220}>

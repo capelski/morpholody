@@ -1,11 +1,52 @@
 .navbar {
   display: flex;
-  gap: 0.25rem;
+  flex-direction: column;
+  gap: 0.35rem;
   background: #ffffff;
   border-radius: 12px;
   padding: 0.35rem;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
   margin-bottom: 1.25rem;
+  width: 100%;
+}
+
+/* Month selector */
+.navbar-month {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.2rem 0.15rem;
+}
+
+.navbar-month-label {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1a202c;
+}
+
+.navbar-month-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #718096;
+  font-size: 1.5rem;
+  line-height: 1;
+  padding: 0.1rem 0.4rem;
+  border-radius: 6px;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.navbar-month-btn:hover {
+  background: #f7fafc;
+  color: #2d3748;
+}
+
+/* Tab row */
+.navbar-tabs {
+  display: flex;
+  gap: 0.25rem;
 }
 
 .navbar-item {
