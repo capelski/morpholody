@@ -297,7 +297,7 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
                             <input
                               type="text"
                               className="day-meal-field day-component-field--qty"
-                              placeholder={isGhostComp ? "Qty" : ""}
+                              placeholder={editingMeals || isGhostComp ? "Qty" : ""}
                               value={comp.quantity}
                               readOnly={!editingMeals}
                               onChange={(e) =>
