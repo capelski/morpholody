@@ -208,7 +208,7 @@ export default function Evolution() {
                   <Dot
                     key={props.key}
                     {...props}
-                    r={4}
+                    r={3}
                     fill={WEIGHT_COLOR}
                     stroke="#ffffff"
                     strokeWidth={2}
@@ -262,7 +262,7 @@ export default function Evolution() {
                     <Dot
                       key={props.key}
                       {...props}
-                      r={5}
+                      r={6}
                       fill="#c05621"
                       stroke="#ffffff"
                       strokeWidth={2}
