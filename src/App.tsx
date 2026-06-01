@@ -25,11 +25,7 @@ export default function App() {
         onMonthChange={handleMonthChange}
       />
       {view === "calendar" ? (
-        <Calendar
-          viewYear={viewYear}
-          viewMonth={viewMonth}
-          onMonthChange={handleMonthChange}
-        />
+        <Calendar viewYear={viewYear} viewMonth={viewMonth} />
       ) : (
         <Evolution viewYear={viewYear} viewMonth={viewMonth} />
       )}

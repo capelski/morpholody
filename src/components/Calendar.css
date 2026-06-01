@@ -109,29 +109,3 @@
   background: rgba(255, 255, 255, 0.8);
 }
 
-/* Footer */
-.calendar-footer {
-  margin-top: 1.25rem;
-  display: flex;
-  align-items: center;
-}
-
-.today-btn {
-  background: none;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 0.4rem 0.9rem;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #3182ce;
-  cursor: pointer;
-  font-family: inherit;
-  transition:
-    background 0.15s,
-    border-color 0.15s;
-}
-
-.today-btn:hover {
-  background: #ebf4ff;
-  border-color: #bee3f8;
-}

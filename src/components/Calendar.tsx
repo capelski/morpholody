@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import Day from "./Day";
 import { getDayDataForMonth } from "../storage";
 import "./Calendar.css";
@@ -20,17 +20,14 @@ function getFirstDayOfMonth(year: number, month: number): number {
 interface CalendarProps {
   viewYear: number;
   viewMonth: number;
-  onMonthChange: (year: number, month: number) => void;
 }
 
-export default function Calendar({ viewYear, viewMonth, onMonthChange }: CalendarProps) {
+export default function Calendar({ viewYear, viewMonth }: CalendarProps) {
   const today = new Date();
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [dayData, setDayData] = useState<
     Map<number, { hasWeight: boolean; hasMeals: boolean }>
   >(new Map());
-  const skipClearRef = useRef(false);
-
   const daysInMonth = getDaysInMonth(viewYear, viewMonth);
   const firstDay = getFirstDayOfMonth(viewYear, viewMonth);
 
@@ -38,12 +35,7 @@ export default function Calendar({ viewYear, viewMonth, onMonthChange }: Calenda
     getDayDataForMonth(viewYear, viewMonth + 1).then(setDayData);
   }, [viewYear, viewMonth]);
 
-  // Clear selection when the month changes via navigation, but not when goToToday triggers it.
   useEffect(() => {
-    if (skipClearRef.current) {
-      skipClearRef.current = false;
-      return;
-    }
     setSelectedDate(null);
   }, [viewYear, viewMonth]);
 
@@ -59,12 +51,6 @@ export default function Calendar({ viewYear, viewMonth, onMonthChange }: Calenda
     } else {
       setSelectedDate(date);
     }
-  }
-
-  function goToToday() {
-    skipClearRef.current = true;
-    onMonthChange(today.getFullYear(), today.getMonth());
-    setSelectedDate(today);
   }
 
   function isToday(day: number) {
@@ -139,11 +125,7 @@ export default function Calendar({ viewYear, viewMonth, onMonthChange }: Calenda
           ))}
         </div>
 
-        <div className="calendar-footer">
-          <button className="today-btn" onClick={goToToday}>
-            Today
-          </button>
-        </div>
+
       </div>
 
       {selectedDate && (
