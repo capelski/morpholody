@@ -30,29 +30,28 @@ function nextMinute(hhmm: string): string {
   return `${String(Math.floor(total / 60) % 24).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
 }
 
+function ghostEntry(afterTime?: string): MealEntry {
+  return { time: afterTime ? nextMinute(afterTime) : nowHHMM(), description: "", calories: null };
+}
+
 export default function Day({ date, onClose, onSaved }: DayProps) {
   const [weightStr, setWeightStr] = useState("");
-  const [meals, setMeals] = useState<MealEntry[]>([]);
-  const [newTime, setNewTime] = useState(nowHHMM);
-  const [newDesc, setNewDesc] = useState("");
-  const [newCalStr, setNewCalStr] = useState("");
+  // meals always ends with a ghost row (empty description and null calories)
+  const [meals, setMeals] = useState<MealEntry[]>([ghostEntry()]);
   const weightRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setWeightStr("");
-    setMeals([]);
-    setNewTime(nowHHMM());
-    setNewDesc("");
-    setNewCalStr("");
+    setMeals([ghostEntry()]);
     getDiaryEntry(toDateKey(date)).then((entry) => {
       setWeightStr(entry?.weight != null ? String(entry.weight) : "");
-      setMeals(
-        (entry?.meals ?? []).map(({ time, description, calories }) => ({
-          time,
-          description,
-          calories: calories ?? null,
-        })),
-      );
+      const loaded = (entry?.meals ?? []).map(({ time, description, calories }) => ({
+        time,
+        description,
+        calories: calories ?? null,
+      }));
+      const last = loaded[loaded.length - 1];
+      setMeals([...loaded, ghostEntry(last?.time)]);
     });
   }, [date]);
 
@@ -69,25 +68,20 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
   }, [onClose]);
 
   function updateMeal(index: number, patch: Partial<MealEntry>) {
-    setMeals((prev) =>
-      prev.map((m, i) => (i === index ? { ...m, ...patch } : m)),
-    );
-  }
-
-  function addMeal() {
-    const hasContent = newDesc.trim() !== "" || parseCal(newCalStr) !== null;
-    if (!hasContent || meals.some((m) => m.time === newTime)) return;
-    const entry: MealEntry = {
-      time: newTime,
-      description: newDesc.trim(),
-      calories: parseCal(newCalStr),
-    };
-    setMeals((prev) =>
-      [...prev, entry].sort((a, b) => a.time.localeCompare(b.time)),
-    );
-    setNewTime(nextMinute(newTime));
-    setNewDesc("");
-    setNewCalStr("");
+    setMeals((prev) => {
+      const updated = prev.map((m, i) => (i === index ? { ...m, ...patch } : m));
+      const isLast = index === prev.length - 1;
+      if (isLast) {
+        const was = prev[index];
+        const now = updated[index];
+        const wasEmpty = was.description.trim() === "" && was.calories === null;
+        const hasContent = now.description.trim() !== "" || now.calories !== null;
+        if (wasEmpty && hasContent) {
+          return [...updated, ghostEntry(now.time)];
+        }
+      }
+      return updated;
+    });
   }
 
   function removeMeal(index: number) {
@@ -98,11 +92,10 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
     e.preventDefault();
     const value = parseFloat(weightStr);
     const weight = !isNaN(value) && value > 0 ? value : null;
-    // Re-sort in case the user changed a time while editing.
-    const sortedMeals = [...meals].sort((a, b) =>
-      a.time.localeCompare(b.time),
-    );
-    await saveDiaryEntry(toDateKey(date), { weight, meals: sortedMeals });
+    const mealsToSave = meals
+      .filter((m) => m.description.trim() !== "" || m.calories !== null)
+      .sort((a, b) => a.time.localeCompare(b.time));
+    await saveDiaryEntry(toDateKey(date), { weight, meals: mealsToSave });
     onSaved?.();
     onClose();
   }
@@ -114,12 +107,11 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
     year: "numeric",
   });
 
-  // Detect duplicate times among existing meals (can happen if the user edits a time field).
-  const mealTimes = meals.map((m) => m.time);
+  const committed = meals.slice(0, -1);
+  const mealTimes = committed.map((m) => m.time);
   const hasDuplicateTimes = mealTimes.length !== new Set(mealTimes).size;
-  const newTimeConflict = meals.some((m) => m.time === newTime);
   const weightValid = weightStr !== "" && parseFloat(weightStr) > 0;
-  const canSave = (weightValid || meals.length > 0) && !hasDuplicateTimes;
+  const canSave = (weightValid || committed.length > 0) && !hasDuplicateTimes;
 
   return (
     <div className="day-overlay" onPointerDown={onClose}>
@@ -167,10 +159,14 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
           <div className="day-field">
             <span className="day-field-label">Meals</span>
 
-            {meals.length > 0 && (
-              <ul className="day-meals">
-                {meals.map((meal, i) => (
-                  <li key={i} className="day-meal-row">
+            <ul className="day-meals">
+              {meals.map((meal, i) => {
+                const isGhost = i === meals.length - 1;
+                return (
+                  <li
+                    key={i}
+                    className={`day-meal-row${isGhost ? " day-meal-row--ghost" : ""}`}
+                  >
                     <input
                       type="time"
                       className="day-meal-field day-meal-field--time"
@@ -181,6 +177,7 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
                     <input
                       type="text"
                       className="day-meal-field day-meal-field--desc"
+                      placeholder={isGhost ? "What did you eat?" : ""}
                       value={meal.description}
                       onChange={(e) =>
                         updateMeal(i, { description: e.target.value })
@@ -199,78 +196,23 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
                       }
                       aria-label="Calories"
                     />
-                    <button
-                      type="button"
-                      className="day-meal-delete"
-                      onClick={() => removeMeal(i)}
-                      aria-label={`Remove meal at ${meal.time}`}
-                    >
-                      &#10005;
-                    </button>
+                    {!isGhost && (
+                      <button
+                        type="button"
+                        className="day-meal-delete"
+                        onClick={() => removeMeal(i)}
+                        aria-label={`Remove meal at ${meal.time}`}
+                      >
+                        &#10005;
+                      </button>
+                    )}
                   </li>
-                ))}
-              </ul>
-            )}
+                );
+              })}
+            </ul>
 
             {hasDuplicateTimes && (
               <p className="day-meal-conflict">Two meals share the same time</p>
-            )}
-
-            <div className="day-meal-add">
-              <input
-                type="time"
-                className="day-meal-time-input"
-                value={newTime}
-                onChange={(e) => setNewTime(e.target.value)}
-                aria-label="New meal time"
-              />
-              <input
-                type="text"
-                className="day-meal-desc-input"
-                placeholder="What did you eat?"
-                value={newDesc}
-                onChange={(e) => setNewDesc(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    addMeal();
-                  }
-                }}
-                aria-label="Meal description"
-              />
-              <input
-                type="number"
-                className="day-meal-cal-input"
-                placeholder="kcal"
-                min="1"
-                step="1"
-                value={newCalStr}
-                onChange={(e) => setNewCalStr(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    addMeal();
-                  }
-                }}
-                aria-label="Calories"
-              />
-              <button
-                type="button"
-                className="day-meal-add-btn"
-                onClick={addMeal}
-                disabled={
-                  (newDesc.trim() === "" && parseCal(newCalStr) === null) ||
-                  newTimeConflict
-                }
-              >
-                Add
-              </button>
-            </div>
-
-            {newTimeConflict && (
-              <p className="day-meal-conflict">
-                A meal at {newTime} already exists
-              </p>
             )}
           </div>
 
