@@ -128,7 +128,14 @@ export async function saveDiaryEntry(
   date: string,
   data: Pick<DiaryEntry, "weight" | "meals">,
 ): Promise<void> {
-  const calories = null;
+  const calories = data.meals.reduce<number | null>((sum, m) => {
+    const mealCal = m.components.reduce<number | null>((s, c) => {
+      if (c.calories == null) return s;
+      return (s ?? 0) + c.calories;
+    }, null);
+    if (mealCal == null) return sum;
+    return (sum ?? 0) + mealCal;
+  }, null);
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const req = db

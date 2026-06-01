@@ -228,8 +228,19 @@
 }
 
 .day-component-field--qty {
-  width: 72px;
+  width: 64px;
   flex-shrink: 0;
+}
+
+.day-component-field--cal {
+  width: 60px;
+  flex-shrink: 0;
+  -moz-appearance: textfield;
+}
+
+.day-component-field--cal::-webkit-outer-spin-button,
+.day-component-field--cal::-webkit-inner-spin-button {
+  -webkit-appearance: none;
 }
 
 .day-meal-delete {

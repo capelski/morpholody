@@ -5,6 +5,7 @@ import "./Day.css";
 interface ComponentEntry {
   name: string;
   quantity: string;
+  calories: number | null;
 }
 
 interface MealEntry {
@@ -29,8 +30,13 @@ function nextMinute(hhmm: string): string {
   return `${String(Math.floor(total / 60) % 24).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
 }
 
+function parseCal(s: string): number | null {
+  const v = parseInt(s, 10);
+  return !isNaN(v) && v > 0 ? v : null;
+}
+
 function ghostComponent(): ComponentEntry {
-  return { name: "", quantity: "" };
+  return { name: "", quantity: "", calories: null };
 }
 
 function ghostMeal(afterTime?: string): MealEntry {
@@ -57,7 +63,7 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
         time: m.time,
         components:
           m.components && m.components.length > 0
-            ? [...m.components, ghostComponent()]
+            ? [...m.components.map((c) => ({ name: c.name, quantity: c.quantity, calories: c.calories ?? null })), ghostComponent()]
             : [ghostComponent()],
       }));
       const last = loaded[loaded.length - 1];
@@ -259,6 +265,18 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
                                 updateComponent(mi, ci, { quantity: e.target.value })
                               }
                               aria-label="Quantity"
+                            />
+                            <input
+                              type="number"
+                              className="day-meal-field day-component-field--cal"
+                              placeholder="kcal"
+                              min="1"
+                              step="1"
+                              value={comp.calories != null ? String(comp.calories) : ""}
+                              onChange={(e) =>
+                                updateComponent(mi, ci, { calories: parseCal(e.target.value) })
+                              }
+                              aria-label="Calories"
                             />
                             {!isGhostComp && (
                               <button
