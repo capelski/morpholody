@@ -111,26 +111,10 @@
   position: relative;
 }
 
-.day-cell.today::after {
-  content: "";
-  position: absolute;
-  bottom: 5px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: #3182ce;
-}
-
 .day-cell.selected {
   background: #3182ce;
   color: #ffffff;
   font-weight: 700;
-}
-
-.day-cell.selected.today::after {
-  background: #ffffff;
 }
 
 /* Data indicator dots */
@@ -165,12 +149,6 @@
 /* Green — weight + meals */
 .day-cell.has-both::before {
   background: #48bb78;
-}
-
-/* Shift data dot right when the today dot is also present */
-.day-cell.today.has-meals-only::before,
-.day-cell.today.has-both::before {
-  left: calc(50% + 2px);
 }
 
 /* Fade dot when the cell is selected */
