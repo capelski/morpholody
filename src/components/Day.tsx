@@ -31,7 +31,9 @@ function nextMinute(hhmm: string): string {
 }
 
 function ghostEntry(afterTime?: string): MealEntry {
-  return { time: afterTime ? nextMinute(afterTime) : nowHHMM(), description: "", calories: null };
+  const now = nowHHMM();
+  const time = afterTime === now ? nextMinute(afterTime) : now;
+  return { time, description: "", calories: null };
 }
 
 export default function Day({ date, onClose, onSaved }: DayProps) {
