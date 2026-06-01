@@ -52,11 +52,13 @@ function isMealEmpty(meal: MealEntry): boolean {
 export default function Day({ date, onClose, onSaved }: DayProps) {
   const [weightStr, setWeightStr] = useState("");
   const [meals, setMeals] = useState<MealEntry[]>([ghostMeal()]);
+  const [editingMeals, setEditingMeals] = useState(false);
   const weightRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setWeightStr("");
     setMeals([ghostMeal()]);
+    setEditingMeals(false);
     getDiaryEntry(toDateKey(date)).then((entry) => {
       setWeightStr(entry?.weight != null ? String(entry.weight) : "");
       const loaded = (entry?.meals ?? []).map((m) => ({
@@ -221,14 +223,25 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
           <div className="day-field">
             <div className="day-meals-label-row">
               <span className="day-field-label">Meals</span>
-              {dayCalories != null && (
-                <span className="day-field-label day-day-total">{dayCalories} kcal</span>
-              )}
+              <div className="day-meals-label-right">
+                {dayCalories != null && (
+                  <span className="day-field-label day-day-total">{dayCalories} kcal</span>
+                )}
+                <button
+                  type="button"
+                  className={`day-meals-edit-btn${editingMeals ? " day-meals-edit-btn--active" : ""}`}
+                  onClick={() => setEditingMeals((v) => !v)}
+                  aria-label={editingMeals ? "Stop editing meals" : "Edit meals"}
+                >
+                  ✏️
+                </button>
+              </div>
             </div>
 
             <ul className="day-meals">
               {meals.map((meal, mi) => {
                 const isGhostMeal = mi === meals.length - 1;
+                if (isGhostMeal && !editingMeals) return null;
                 return (
                   <li
                     key={mi}
@@ -239,7 +252,8 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
                         type="time"
                         className="day-meal-field day-meal-field--time"
                         value={meal.time}
-                        onChange={(e) => updateMealTime(mi, e.target.value)}
+                        onChange={(e) => editingMeals && updateMealTime(mi, e.target.value)}
+                        readOnly={!editingMeals}
                         aria-label="Meal time"
                       />
                       {!isGhostMeal && (() => {
@@ -251,7 +265,7 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
                           <span className="day-meal-total">{total} kcal</span>
                         ) : null;
                       })()}
-                      {!isGhostMeal && (
+                      {!isGhostMeal && editingMeals && (
                         <button
                           type="button"
                           className="day-meal-delete"
@@ -266,6 +280,7 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
                     <ul className="day-components">
                       {meal.components.map((comp, ci) => {
                         const isGhostComp = ci === meal.components.length - 1;
+                        if (isGhostComp && !editingMeals) return null;
                         return (
                           <li key={ci} className="day-component-row">
                             <input
@@ -273,6 +288,7 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
                               className="day-meal-field day-component-field--name"
                               placeholder={isGhostComp ? "Component" : ""}
                               value={comp.name}
+                              readOnly={!editingMeals}
                               onChange={(e) =>
                                 updateComponent(mi, ci, { name: e.target.value })
                               }
@@ -283,6 +299,7 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
                               className="day-meal-field day-component-field--qty"
                               placeholder={isGhostComp ? "Qty" : ""}
                               value={comp.quantity}
+                              readOnly={!editingMeals}
                               onChange={(e) =>
                                 updateComponent(mi, ci, { quantity: e.target.value })
                               }
@@ -295,12 +312,13 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
                               min="1"
                               step="1"
                               value={comp.calories != null ? String(comp.calories) : ""}
+                              readOnly={!editingMeals}
                               onChange={(e) =>
                                 updateComponent(mi, ci, { calories: parseCal(e.target.value) })
                               }
                               aria-label="Calories"
                             />
-                            {!isGhostComp && (
+                            {!isGhostComp && editingMeals && (
                               <button
                                 type="button"
                                 className="day-meal-delete"

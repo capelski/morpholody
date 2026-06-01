@@ -89,13 +89,39 @@
 
 .day-meals-label-row {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
+}
+
+.day-meals-label-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .day-day-total {
   font-variant-numeric: tabular-nums;
   color: #4a5568;
+}
+
+.day-meals-edit-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.8rem;
+  padding: 0.1rem 0.2rem;
+  border-radius: 4px;
+  opacity: 0.4;
+  transition: opacity 0.12s;
+  line-height: 1;
+}
+
+.day-meals-edit-btn:hover {
+  opacity: 0.8;
+}
+
+.day-meals-edit-btn--active {
+  opacity: 1;
 }
 
 .day-field-label {
