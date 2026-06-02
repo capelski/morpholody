@@ -7,6 +7,7 @@ interface ComponentEntry {
   name: string;
   quantity: number | null;
   calories: number | null;
+  caloriesPerUnit: number | null;
 }
 
 interface MealEntry {
@@ -42,7 +43,7 @@ function parseQty(s: string): number | null {
 }
 
 function ghostComponent(): ComponentEntry {
-  return { name: "", quantity: null, calories: null };
+  return { name: "", quantity: null, calories: null, caloriesPerUnit: null };
 }
 
 function ghostMeal(afterTime?: string): MealEntry {
@@ -62,11 +63,15 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
   const [nameSuggestions, setNameSuggestions] = useState<{
     mi: number;
     ci: number;
-    items: string[];
+    items: { name: string; caloriesPerUnit: number }[];
     active: number;
     hasExactMatch: boolean;
   } | null>(null);
-  const [savingComponentName, setSavingComponentName] = useState<string | null>(null);
+  const [savingComponent, setSavingComponent] = useState<{
+    name: string;
+    mi: number;
+    ci: number;
+  } | null>(null);
   const weightRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -79,7 +84,7 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
         time: m.time,
         components:
           m.components && m.components.length > 0
-            ? [...m.components.map((c) => ({ name: c.name, quantity: typeof c.quantity === "string" ? parseQty(c.quantity) : c.quantity, calories: c.calories ?? null })), ghostComponent()]
+            ? [...m.components.map((c) => ({ name: c.name, quantity: typeof c.quantity === "string" ? parseQty(c.quantity) : c.quantity, calories: c.calories ?? null, caloriesPerUnit: null })), ghostComponent()]
             : [ghostComponent()],
       }));
       const last = loaded[loaded.length - 1];
@@ -159,27 +164,49 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
     const trimmed = value.trim();
     if (trimmed.length > 0) {
       const items = await getMealComponentSuggestions(trimmed);
-      const hasExactMatch = items.some((item) => item.toLowerCase() === trimmed.toLowerCase());
+      const hasExactMatch = items.some((item) => item.name.toLowerCase() === trimmed.toLowerCase());
       setNameSuggestions({ mi, ci, items, active: -1, hasExactMatch });
     } else {
       setNameSuggestions(null);
     }
   }
 
-  function selectSuggestion(name: string) {
+  function selectSuggestion(suggestion: { name: string; caloriesPerUnit: number }) {
     if (!nameSuggestions) return;
-    updateComponent(nameSuggestions.mi, nameSuggestions.ci, { name });
+    const { mi, ci } = nameSuggestions;
+    const qty = meals[mi].components[ci].quantity;
+    const calories = qty != null ? Math.round(suggestion.caloriesPerUnit * qty) : null;
+    updateComponent(mi, ci, {
+      name: suggestion.name,
+      caloriesPerUnit: suggestion.caloriesPerUnit,
+      calories,
+    });
     setNameSuggestions(null);
   }
 
-  function saveAndSelectNew(name: string) {
+  function saveAndSelectNew(name: string, mi: number, ci: number) {
     setNameSuggestions(null);
-    setSavingComponentName(name);
+    setSavingComponent({ name, mi, ci });
   }
 
   async function handleSaveMealComponent(name: string, caloriesPerUnit: number) {
     await saveMealComponent(name, caloriesPerUnit);
-    setSavingComponentName(null);
+    if (savingComponent) {
+      const qty = meals[savingComponent.mi].components[savingComponent.ci].quantity;
+      const calories = qty != null ? Math.round(caloriesPerUnit * qty) : null;
+      updateComponent(savingComponent.mi, savingComponent.ci, { caloriesPerUnit, calories });
+    }
+    setSavingComponent(null);
+  }
+
+  function handleQuantityChange(mi: number, ci: number, value: string) {
+    const quantity = parseQty(value);
+    const cpu = meals[mi].components[ci].caloriesPerUnit;
+    const patch: Partial<ComponentEntry> = { quantity };
+    if (cpu != null) {
+      patch.calories = quantity != null ? Math.round(cpu * quantity) : null;
+    }
+    updateComponent(mi, ci, patch);
   }
 
   function handleNameKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -200,7 +227,7 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
       e.preventDefault();
       if (nameSuggestions.active === addIdx) {
         const name = meals[nameSuggestions.mi].components[nameSuggestions.ci].name.trim();
-        if (name) saveAndSelectNew(name);
+        if (name) saveAndSelectNew(name, nameSuggestions.mi, nameSuggestions.ci);
       } else {
         selectSuggestion(nameSuggestions.items[nameSuggestions.active]);
       }
@@ -377,13 +404,13 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
                                 <ul className="day-component-suggestions" role="listbox">
                                   {nameSuggestions.items.map((item, idx) => (
                                     <li
-                                      key={item}
+                                      key={item.name}
                                       role="option"
                                       aria-selected={idx === nameSuggestions.active}
                                       className={`day-component-suggestion${idx === nameSuggestions.active ? " day-component-suggestion--active" : ""}`}
                                       onMouseDown={() => selectSuggestion(item)}
                                     >
-                                      {item}
+                                      {item.name}
                                     </li>
                                   ))}
                                   {!nameSuggestions.hasExactMatch && (
@@ -391,7 +418,7 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
                                       role="option"
                                       aria-selected={nameSuggestions.active === nameSuggestions.items.length}
                                       className={`day-component-suggestion day-component-suggestion--save${nameSuggestions.active === nameSuggestions.items.length ? " day-component-suggestion--active" : ""}`}
-                                      onMouseDown={() => saveAndSelectNew(comp.name.trim())}
+                                      onMouseDown={() => saveAndSelectNew(comp.name.trim(), mi, ci)}
                                     >
                                       Save "{comp.name.trim()}"
                                     </li>
@@ -407,9 +434,7 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
                               step="any"
                               value={comp.quantity != null ? String(comp.quantity) : ""}
                               readOnly={!editingMeals}
-                              onChange={(e) =>
-                                updateComponent(mi, ci, { quantity: parseQty(e.target.value) })
-                              }
+                              onChange={(e) => handleQuantityChange(mi, ci, e.target.value)}
                               aria-label="Quantity"
                             />
                             <input
@@ -419,7 +444,7 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
                               min="1"
                               step="1"
                               value={comp.calories != null ? String(comp.calories) : ""}
-                              readOnly={!editingMeals}
+                              readOnly={!editingMeals || comp.caloriesPerUnit != null}
                               onChange={(e) =>
                                 updateComponent(mi, ci, { calories: parseCal(e.target.value) })
                               }
@@ -460,11 +485,11 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
         </form>
       </div>
     </div>
-    {savingComponentName !== null && (
+    {savingComponent !== null && (
       <SaveMealComponentDialog
-        initialName={savingComponentName}
+        initialName={savingComponent.name}
         onSave={handleSaveMealComponent}
-        onCancel={() => setSavingComponentName(null)}
+        onCancel={() => setSavingComponent(null)}
       />
     )}
     </>

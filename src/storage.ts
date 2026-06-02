@@ -213,8 +213,10 @@ export async function getDiaryEntriesForMonth(
   );
 }
 
-/** Fetch meal component name suggestions matching the given prefix (case-insensitive, up to 10). */
-export async function getMealComponentSuggestions(prefix: string): Promise<string[]> {
+/** Fetch meal component suggestions matching the given prefix (case-insensitive, up to 10). */
+export async function getMealComponentSuggestions(
+  prefix: string,
+): Promise<{ name: string; caloriesPerUnit: number }[]> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const lower = prefix.toLowerCase();
@@ -224,7 +226,13 @@ export async function getMealComponentSuggestions(prefix: string): Promise<strin
       .objectStore(MEAL_COMPONENTS_STORE)
       .index("by_name_lower")
       .getAll(range, 10);
-    req.onsuccess = () => resolve((req.result as { name: string }[]).map((r) => r.name));
+    req.onsuccess = () =>
+      resolve(
+        (req.result as { name: string; caloriesPerUnit?: number }[]).map((r) => ({
+          name: r.name,
+          caloriesPerUnit: r.caloriesPerUnit ?? 0,
+        })),
+      );
     req.onerror = () => reject(req.error);
   });
 }
