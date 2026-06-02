@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import Day from "./Day";
 import MonthSelector from "./MonthSelector";
 import { getDayDataForMonth } from "../storage";
-import "./Calendar.css";
+import "./DiaryCalendar.css";
 
 const DAYS_OF_WEEK = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTHS = [
@@ -18,13 +18,13 @@ function getFirstDayOfMonth(year: number, month: number): number {
   return new Date(year, month, 1).getDay();
 }
 
-interface CalendarProps {
+interface DiaryCalendarProps {
   viewYear: number;
   viewMonth: number;
   onMonthChange: (year: number, month: number) => void;
 }
 
-export default function Calendar({ viewYear, viewMonth, onMonthChange }: CalendarProps) {
+export default function DiaryCalendar({ viewYear, viewMonth, onMonthChange }: DiaryCalendarProps) {
   const today = new Date();
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [dayData, setDayData] = useState<
@@ -91,10 +91,10 @@ export default function Calendar({ viewYear, viewMonth, onMonthChange }: Calenda
 
   return (
     <>
-      <div className="calendar">
+      <div className="diary-calendar">
         <MonthSelector viewYear={viewYear} viewMonth={viewMonth} onMonthChange={onMonthChange} />
         
-        <div className="calendar-weekdays">
+        <div className="diary-calendar-weekdays">
           {DAYS_OF_WEEK.map((d) => (
             <div key={d} className="weekday">
               {d}
@@ -102,7 +102,7 @@ export default function Calendar({ viewYear, viewMonth, onMonthChange }: Calenda
           ))}
         </div>
 
-        <div className="calendar-grid">
+        <div className="diary-calendar-grid">
           {cells.map((day, idx) => (
             <button
               key={idx}

@@ -1,12 +1,12 @@
 import { useState } from "react";
 import NavBar, { type View } from "./components/NavBar";
-import Calendar from "./components/Calendar";
+import Diary from "./components/Diary";
 import Evolution from "./components/Evolution";
 import Components from "./components/Components";
 import "./App.css";
 
 export default function App() {
-  const [view, setView] = useState<View>("calendar");
+  const [view, setView] = useState<View>("diary");
   const today = new Date();
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth());
@@ -20,8 +20,8 @@ export default function App() {
     <div className="app">
       <NavBar active={view} onChange={setView} />
       <div className="app-content">
-        {view === "calendar" ? (
-          <Calendar viewYear={viewYear} viewMonth={viewMonth} onMonthChange={handleMonthChange} />
+        {view === "diary" ? (
+          <Diary viewYear={viewYear} viewMonth={viewMonth} onMonthChange={handleMonthChange} />
         ) : view === "evolution" ? (
           <Evolution viewYear={viewYear} viewMonth={viewMonth} onMonthChange={handleMonthChange} />
         ) : (

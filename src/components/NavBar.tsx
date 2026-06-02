@@ -1,6 +1,6 @@
 import "./NavBar.css";
 
-export type View = "calendar" | "evolution" | "components";
+export type View = "diary" | "evolution" | "components";
 
 interface NavBarProps {
   active: View;
@@ -12,11 +12,11 @@ export default function NavBar({ active, onChange }: NavBarProps) {
     <nav className="navbar">
       <div className="navbar-tabs">
         <button
-          className={`navbar-item ${active === "calendar" ? "active" : ""}`}
-          onClick={() => onChange("calendar")}
+          className={`navbar-item ${active === "diary" ? "active" : ""}`}
+          onClick={() => onChange("diary")}
         >
           <span className="navbar-icon">&#128197;</span>
-          Calendar
+          Diary
         </button>
         <button
           className={`navbar-item ${active === "evolution" ? "active" : ""}`}

@@ -1,10 +1,10 @@
-.calendar {
+.diary-calendar {
   width: 100%;
   user-select: none;
 }
 
 /* Weekdays */
-.calendar-weekdays {
+.diary-calendar-weekdays {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   margin-bottom: 0.5rem;
@@ -21,7 +21,7 @@
 }
 
 /* Grid */
-.calendar-grid {
+.diary-calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 2px;
@@ -104,4 +104,3 @@
 .day-cell.selected.has-both::before {
   background: rgba(255, 255, 255, 0.8);
 }
-
