@@ -98,7 +98,7 @@ export function toDateKey(date: Date): string {
 
 export interface MealComponent {
   name: string;
-  quantity: string;
+  quantity: number | null;
   calories: number | null;
 }
 

@@ -4,7 +4,7 @@ import "./Day.css";
 
 interface ComponentEntry {
   name: string;
-  quantity: string;
+  quantity: number | null;
   calories: number | null;
 }
 
@@ -35,8 +35,13 @@ function parseCal(s: string): number | null {
   return !isNaN(v) && v > 0 ? v : null;
 }
 
+function parseQty(s: string): number | null {
+  const v = parseFloat(s);
+  return !isNaN(v) && v > 0 ? v : null;
+}
+
 function ghostComponent(): ComponentEntry {
-  return { name: "", quantity: "", calories: null };
+  return { name: "", quantity: null, calories: null };
 }
 
 function ghostMeal(afterTime?: string): MealEntry {
@@ -46,7 +51,7 @@ function ghostMeal(afterTime?: string): MealEntry {
 }
 
 function isMealEmpty(meal: MealEntry): boolean {
-  return meal.components.every((c) => c.name.trim() === "" && c.quantity.trim() === "");
+  return meal.components.every((c) => c.name.trim() === "" && c.quantity == null);
 }
 
 export default function Day({ date, onClose, onSaved }: DayProps) {
@@ -65,7 +70,7 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
         time: m.time,
         components:
           m.components && m.components.length > 0
-            ? [...m.components.map((c) => ({ name: c.name, quantity: c.quantity, calories: c.calories ?? null })), ghostComponent()]
+            ? [...m.components.map((c) => ({ name: c.name, quantity: typeof c.quantity === "string" ? parseQty(c.quantity) : c.quantity, calories: c.calories ?? null })), ghostComponent()]
             : [ghostComponent()],
       }));
       const last = loaded[loaded.length - 1];
@@ -103,10 +108,10 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
         const isLastComp = compIndex === meal.components.length - 1;
         const wasEmpty =
           meal.components[compIndex].name.trim() === "" &&
-          meal.components[compIndex].quantity.trim() === "";
+          meal.components[compIndex].quantity == null;
         const patchedComp = updatedComps[compIndex];
         const hasContent =
-          patchedComp.name.trim() !== "" || patchedComp.quantity.trim() !== "";
+          patchedComp.name.trim() !== "" || patchedComp.quantity != null;
 
         const newComps =
           isLastComp && wasEmpty && hasContent
@@ -148,7 +153,7 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
       .filter((m) => !isMealEmpty(m))
       .map((m) => ({
         time: m.time,
-        components: m.components.filter((c) => c.name.trim() !== "" || c.quantity.trim() !== ""),
+        components: m.components.filter((c) => c.name.trim() !== "" || c.quantity != null),
       }))
       .sort((a, b) => a.time.localeCompare(b.time));
     await saveDiaryEntry(toDateKey(date), { weight, meals: mealsToSave });
@@ -295,13 +300,15 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
                               aria-label="Component name"
                             />
                             <input
-                              type="text"
+                              type="number"
                               className="day-meal-field day-component-field--qty"
                               placeholder={editingMeals || isGhostComp ? "Qty" : ""}
-                              value={comp.quantity}
+                              min="0"
+                              step="any"
+                              value={comp.quantity != null ? String(comp.quantity) : ""}
                               readOnly={!editingMeals}
                               onChange={(e) =>
-                                updateComponent(mi, ci, { quantity: e.target.value })
+                                updateComponent(mi, ci, { quantity: parseQty(e.target.value) })
                               }
                               aria-label="Quantity"
                             />
