@@ -8,6 +8,7 @@ interface ComponentEntry {
   quantity: number | null;
   calories: number | null;
   caloriesPerUnit: number | null;
+  units?: string;
 }
 
 interface MealEntry {
@@ -171,7 +172,7 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
     }
   }
 
-  function selectSuggestion(suggestion: { name: string; caloriesPerUnit: number }) {
+  function selectSuggestion(suggestion: { name: string; caloriesPerUnit: number; units?: string }) {
     if (!nameSuggestions) return;
     const { mi, ci } = nameSuggestions;
     const qty = meals[mi].components[ci].quantity;
@@ -180,6 +181,7 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
       name: suggestion.name,
       caloriesPerUnit: suggestion.caloriesPerUnit,
       calories,
+      units: suggestion.units,
     });
     setNameSuggestions(null);
   }
@@ -429,7 +431,7 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
                             <input
                               type="number"
                               className="day-meal-field day-component-field--qty"
-                              placeholder={editingMeals || isGhostComp ? "Qty" : ""}
+                              placeholder={editingMeals || isGhostComp ? (comp.units ?? "Qty") : ""}
                               min="0"
                               step="any"
                               value={comp.quantity != null ? String(comp.quantity) : ""}

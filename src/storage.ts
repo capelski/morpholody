@@ -228,9 +228,10 @@ export async function getMealComponentSuggestions(
       .getAll(range, 10);
     req.onsuccess = () =>
       resolve(
-        (req.result as { name: string; caloriesPerUnit?: number }[]).map((r) => ({
+        (req.result as { name: string; caloriesPerUnit?: number; units?: string }[]).map((r) => ({
           name: r.name,
           caloriesPerUnit: r.caloriesPerUnit ?? 0,
+          units: r.units,
         })),
       );
     req.onerror = () => reject(req.error);
