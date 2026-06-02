@@ -1,6 +1,7 @@
 const DB_NAME = "morpholody";
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 const DIARY_STORE = "diary";
+const MEAL_COMPONENTS_STORE = "mealComponents";
 
 let dbPromise: Promise<IDBDatabase> | null = null;
 
@@ -14,71 +15,79 @@ function openDB(): Promise<IDBDatabase> {
         const tx = req.transaction!;
 
         if (e.oldVersion === 0) {
-          // Fresh install — create diary store directly, no migration needed.
+          // Fresh install — create all stores directly, no migration needed.
           db.createObjectStore(DIARY_STORE, { keyPath: "date" });
+          db.createObjectStore(MEAL_COMPONENTS_STORE, { keyPath: "name" });
           return;
         }
 
-        // Upgrading from v1 or v2: migrate weights and meals into diary, then
-        // drop the old object stores.
-        const diaryStore = db.createObjectStore(DIARY_STORE, {
-          keyPath: "date",
-        });
-        const diary = new Map<
-          string,
-          {
-            date: string;
-            weight: number | null;
-            meals: Array<{ time: string; description: string }>;
-          }
-        >();
-
-        // Phase 1 — read all weight entries.
-        const weightReq = tx.objectStore("weights").openCursor();
-        weightReq.onsuccess = () => {
-          const cursor = weightReq.result;
-          if (cursor) {
-            const date = cursor.key as string;
-            diary.set(date, { date, weight: cursor.value as number, meals: [] });
-            cursor.continue();
-          } else {
-            // Phase 2 — read all meal entries (only present from v2 onwards).
-            const flush = () => {
-              for (const entry of diary.values()) {
-                entry.meals.sort((a, b) => a.time.localeCompare(b.time));
-                diaryStore.put(entry);
-              }
-              db.deleteObjectStore("weights");
-              if (e.oldVersion >= 2) db.deleteObjectStore("meals");
-            };
-
-            if (e.oldVersion >= 2) {
-              const mealReq = tx.objectStore("meals").openCursor();
-              mealReq.onsuccess = () => {
-                const cursor = mealReq.result;
-                if (cursor) {
-                  const { dateKey: dk, time, description } =
-                    cursor.value as {
-                      dateKey: string;
-                      time: string;
-                      description: string;
-                    };
-                  if (!diary.has(dk)) {
-                    diary.set(dk, { date: dk, weight: null, meals: [] });
-                  }
-                  diary.get(dk)!.meals.push({ time, description });
-                  cursor.continue();
-                } else {
-                  flush();
-                }
-              };
-              mealReq.onerror = () => reject(mealReq.error);
-            } else {
-              flush();
+        if (e.oldVersion < 3) {
+          // Upgrading from v1 or v2: migrate weights and meals into diary, then
+          // drop the old object stores.
+          const diaryStore = db.createObjectStore(DIARY_STORE, {
+            keyPath: "date",
+          });
+          const diary = new Map<
+            string,
+            {
+              date: string;
+              weight: number | null;
+              meals: Array<{ time: string; description: string }>;
             }
-          }
-        };
-        weightReq.onerror = () => reject(weightReq.error);
+          >();
+
+          // Phase 1 — read all weight entries.
+          const weightReq = tx.objectStore("weights").openCursor();
+          weightReq.onsuccess = () => {
+            const cursor = weightReq.result;
+            if (cursor) {
+              const date = cursor.key as string;
+              diary.set(date, { date, weight: cursor.value as number, meals: [] });
+              cursor.continue();
+            } else {
+              // Phase 2 — read all meal entries (only present from v2 onwards).
+              const flush = () => {
+                for (const entry of diary.values()) {
+                  entry.meals.sort((a, b) => a.time.localeCompare(b.time));
+                  diaryStore.put(entry);
+                }
+                db.deleteObjectStore("weights");
+                if (e.oldVersion >= 2) db.deleteObjectStore("meals");
+                db.createObjectStore(MEAL_COMPONENTS_STORE, { keyPath: "name" });
+              };
+
+              if (e.oldVersion >= 2) {
+                const mealReq = tx.objectStore("meals").openCursor();
+                mealReq.onsuccess = () => {
+                  const cursor = mealReq.result;
+                  if (cursor) {
+                    const { dateKey: dk, time, description } =
+                      cursor.value as {
+                        dateKey: string;
+                        time: string;
+                        description: string;
+                      };
+                    if (!diary.has(dk)) {
+                      diary.set(dk, { date: dk, weight: null, meals: [] });
+                    }
+                    diary.get(dk)!.meals.push({ time, description });
+                    cursor.continue();
+                  } else {
+                    flush();
+                  }
+                };
+                mealReq.onerror = () => reject(mealReq.error);
+              } else {
+                flush();
+              }
+            }
+          };
+          weightReq.onerror = () => reject(weightReq.error);
+          return;
+        }
+
+        // v3 → v4: add mealComponents store.
+        db.createObjectStore(MEAL_COMPONENTS_STORE, { keyPath: "name" });
       };
 
       req.onsuccess = () => resolve(req.result);
@@ -182,6 +191,33 @@ export async function getDiaryEntriesForMonth(
     db.transaction(DIARY_STORE, "readonly").objectStore(DIARY_STORE),
     range,
   );
+}
+
+/** Fetch meal component name suggestions matching the given prefix (up to 10). */
+export async function getMealComponentSuggestions(prefix: string): Promise<string[]> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const range = IDBKeyRange.bound(prefix, prefix + "￿");
+    const req = db
+      .transaction(MEAL_COMPONENTS_STORE, "readonly")
+      .objectStore(MEAL_COMPONENTS_STORE)
+      .getAll(range, 10);
+    req.onsuccess = () => resolve((req.result as { name: string }[]).map((r) => r.name));
+    req.onerror = () => reject(req.error);
+  });
+}
+
+/** Upsert a meal component name into the mealComponents store. */
+export async function saveMealComponent(name: string): Promise<void> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const req = db
+      .transaction(MEAL_COMPONENTS_STORE, "readwrite")
+      .objectStore(MEAL_COMPONENTS_STORE)
+      .put({ name });
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  });
 }
 
 /** Return a map from day-of-month to the kinds of data recorded for that day. */

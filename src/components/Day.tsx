@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { toDateKey, getDiaryEntry, saveDiaryEntry } from "../storage";
+import { toDateKey, getDiaryEntry, saveDiaryEntry, getMealComponentSuggestions, saveMealComponent } from "../storage";
 import "./Day.css";
 
 interface ComponentEntry {
@@ -58,6 +58,12 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
   const [weightStr, setWeightStr] = useState("");
   const [meals, setMeals] = useState<MealEntry[]>([ghostMeal()]);
   const [editingMeals, setEditingMeals] = useState(false);
+  const [nameSuggestions, setNameSuggestions] = useState<{
+    mi: number;
+    ci: number;
+    items: string[];
+    active: number;
+  } | null>(null);
   const weightRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -145,6 +151,46 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
     setMeals((prev) => prev.filter((_, i) => i !== mealIndex));
   }
 
+  async function handleNameChange(mi: number, ci: number, value: string) {
+    updateComponent(mi, ci, { name: value });
+    if (value.trim().length > 0) {
+      const items = await getMealComponentSuggestions(value.trim());
+      setNameSuggestions(items.length > 0 ? { mi, ci, items, active: -1 } : null);
+    } else {
+      setNameSuggestions(null);
+    }
+  }
+
+  function selectSuggestion(name: string) {
+    if (!nameSuggestions) return;
+    updateComponent(nameSuggestions.mi, nameSuggestions.ci, { name });
+    setNameSuggestions(null);
+  }
+
+  function handleNameKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (!nameSuggestions) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setNameSuggestions((prev) =>
+        prev ? { ...prev, active: Math.min(prev.active + 1, prev.items.length - 1) } : prev,
+      );
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setNameSuggestions((prev) =>
+        prev ? { ...prev, active: Math.max(prev.active - 1, -1) } : prev,
+      );
+    } else if (e.key === "Enter" && nameSuggestions.active >= 0) {
+      e.preventDefault();
+      selectSuggestion(nameSuggestions.items[nameSuggestions.active]);
+    } else if (e.key === "Escape") {
+      setNameSuggestions(null);
+    }
+  }
+
+  function handleNameBlur() {
+    setTimeout(() => setNameSuggestions(null), 120);
+  }
+
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     const value = parseFloat(weightStr);
@@ -157,6 +203,13 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
       }))
       .sort((a, b) => a.time.localeCompare(b.time));
     await saveDiaryEntry(toDateKey(date), { weight, meals: mealsToSave });
+    await Promise.all(
+      mealsToSave.flatMap((m) =>
+        m.components
+          .filter((c) => c.name.trim() !== "")
+          .map((c) => saveMealComponent(c.name.trim())),
+      ),
+    );
     onSaved?.();
     onClose();
   }
@@ -288,17 +341,38 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
                         if (isGhostComp && !editingMeals) return null;
                         return (
                           <li key={ci} className="day-component-row">
-                            <input
-                              type="text"
-                              className="day-meal-field day-component-field--name"
-                              placeholder={isGhostComp ? "Component" : ""}
-                              value={comp.name}
-                              readOnly={!editingMeals}
-                              onChange={(e) =>
-                                updateComponent(mi, ci, { name: e.target.value })
-                              }
-                              aria-label="Component name"
-                            />
+                            <div className="day-component-name-wrapper">
+                              <input
+                                type="text"
+                                className="day-meal-field day-component-field--name"
+                                placeholder={isGhostComp ? "Component" : ""}
+                                value={comp.name}
+                                readOnly={!editingMeals}
+                                onChange={(e) => handleNameChange(mi, ci, e.target.value)}
+                                onKeyDown={handleNameKeyDown}
+                                onBlur={handleNameBlur}
+                                aria-label="Component name"
+                                aria-autocomplete="list"
+                                aria-expanded={
+                                  nameSuggestions?.mi === mi && nameSuggestions?.ci === ci
+                                }
+                              />
+                              {nameSuggestions?.mi === mi && nameSuggestions?.ci === ci && (
+                                <ul className="day-component-suggestions" role="listbox">
+                                  {nameSuggestions.items.map((item, idx) => (
+                                    <li
+                                      key={item}
+                                      role="option"
+                                      aria-selected={idx === nameSuggestions.active}
+                                      className={`day-component-suggestion${idx === nameSuggestions.active ? " day-component-suggestion--active" : ""}`}
+                                      onMouseDown={() => selectSuggestion(item)}
+                                    >
+                                      {item}
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
+                            </div>
                             <input
                               type="number"
                               className="day-meal-field day-component-field--qty"
