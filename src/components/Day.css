@@ -301,6 +301,18 @@
   color: #2b6cb0;
 }
 
+.day-component-suggestion--save {
+  color: #718096;
+  border-top: 1px solid #e2e8f0;
+  margin-top: 0.2rem;
+  padding-top: 0.35rem;
+}
+
+.day-component-suggestion--save:hover,
+.day-component-suggestion--save.day-component-suggestion--active {
+  color: #2b6cb0;
+}
+
 .day-component-field--qty {
   width: 64px;
   flex-shrink: 0;

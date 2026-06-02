@@ -63,6 +63,7 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
     ci: number;
     items: string[];
     active: number;
+    hasExactMatch: boolean;
   } | null>(null);
   const weightRef = useRef<HTMLInputElement>(null);
 
@@ -153,9 +154,11 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
 
   async function handleNameChange(mi: number, ci: number, value: string) {
     updateComponent(mi, ci, { name: value });
-    if (value.trim().length > 0) {
-      const items = await getMealComponentSuggestions(value.trim());
-      setNameSuggestions(items.length > 0 ? { mi, ci, items, active: -1 } : null);
+    const trimmed = value.trim();
+    if (trimmed.length > 0) {
+      const items = await getMealComponentSuggestions(trimmed);
+      const hasExactMatch = items.some((item) => item === trimmed);
+      setNameSuggestions({ mi, ci, items, active: -1, hasExactMatch });
     } else {
       setNameSuggestions(null);
     }
@@ -167,12 +170,19 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
     setNameSuggestions(null);
   }
 
+  async function saveAndSelectNew(name: string) {
+    await saveMealComponent(name);
+    setNameSuggestions(null);
+  }
+
   function handleNameKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (!nameSuggestions) return;
+    const addIdx = nameSuggestions.hasExactMatch ? -1 : nameSuggestions.items.length;
+    const lastIdx = nameSuggestions.items.length - 1 + (nameSuggestions.hasExactMatch ? 0 : 1);
     if (e.key === "ArrowDown") {
       e.preventDefault();
       setNameSuggestions((prev) =>
-        prev ? { ...prev, active: Math.min(prev.active + 1, prev.items.length - 1) } : prev,
+        prev ? { ...prev, active: Math.min(prev.active + 1, lastIdx) } : prev,
       );
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
@@ -181,7 +191,12 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
       );
     } else if (e.key === "Enter" && nameSuggestions.active >= 0) {
       e.preventDefault();
-      selectSuggestion(nameSuggestions.items[nameSuggestions.active]);
+      if (nameSuggestions.active === addIdx) {
+        const name = meals[nameSuggestions.mi].components[nameSuggestions.ci].name.trim();
+        if (name) saveAndSelectNew(name);
+      } else {
+        selectSuggestion(nameSuggestions.items[nameSuggestions.active]);
+      }
     } else if (e.key === "Escape") {
       setNameSuggestions(null);
     }
@@ -370,6 +385,16 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
                                       {item}
                                     </li>
                                   ))}
+                                  {!nameSuggestions.hasExactMatch && (
+                                    <li
+                                      role="option"
+                                      aria-selected={nameSuggestions.active === nameSuggestions.items.length}
+                                      className={`day-component-suggestion day-component-suggestion--save${nameSuggestions.active === nameSuggestions.items.length ? " day-component-suggestion--active" : ""}`}
+                                      onMouseDown={() => saveAndSelectNew(comp.name.trim())}
+                                    >
+                                      Save "{comp.name.trim()}"
+                                    </li>
+                                  )}
                                 </ul>
                               )}
                             </div>
