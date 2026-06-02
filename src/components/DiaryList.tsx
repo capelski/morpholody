@@ -76,7 +76,7 @@ export default function DiaryList({ viewYear, viewMonth, onMonthChange }: DiaryL
             const [y, m, d] = dateStr.split("-").map(Number);
             const isSelected = selectedDate?.toDateString() === new Date(y, m - 1, d).toDateString();
             const cal = entry ? totalCalories(entry) : null;
-            const meals = entry?.meals.filter((meal) => meal.components.length > 0) ?? [];
+            const meals = entry?.meals.filter((meal) => meal.components?.length > 0) ?? [];
             return (
               <li
                 key={dateStr}
