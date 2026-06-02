@@ -218,13 +218,6 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
       }))
       .sort((a, b) => a.time.localeCompare(b.time));
     await saveDiaryEntry(toDateKey(date), { weight, meals: mealsToSave });
-    await Promise.all(
-      mealsToSave.flatMap((m) =>
-        m.components
-          .filter((c) => c.name.trim() !== "")
-          .map((c) => saveMealComponent(c.name.trim())),
-      ),
-    );
     onSaved?.();
     onClose();
   }
