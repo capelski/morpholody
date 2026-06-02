@@ -157,7 +157,7 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
     const trimmed = value.trim();
     if (trimmed.length > 0) {
       const items = await getMealComponentSuggestions(trimmed);
-      const hasExactMatch = items.some((item) => item === trimmed);
+      const hasExactMatch = items.some((item) => item.toLowerCase() === trimmed.toLowerCase());
       setNameSuggestions({ mi, ci, items, active: -1, hasExactMatch });
     } else {
       setNameSuggestions(null);

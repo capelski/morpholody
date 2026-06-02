@@ -1,5 +1,5 @@
 const DB_NAME = "morpholody";
-const DB_VERSION = 4;
+const DB_VERSION = 5;
 const DIARY_STORE = "diary";
 const MEAL_COMPONENTS_STORE = "mealComponents";
 
@@ -17,7 +17,8 @@ function openDB(): Promise<IDBDatabase> {
         if (e.oldVersion === 0) {
           // Fresh install — create all stores directly, no migration needed.
           db.createObjectStore(DIARY_STORE, { keyPath: "date" });
-          db.createObjectStore(MEAL_COMPONENTS_STORE, { keyPath: "name" });
+          const mcStore = db.createObjectStore(MEAL_COMPONENTS_STORE, { keyPath: "name" });
+          mcStore.createIndex("by_name_lower", "nameLower");
           return;
         }
 
@@ -53,7 +54,8 @@ function openDB(): Promise<IDBDatabase> {
                 }
                 db.deleteObjectStore("weights");
                 if (e.oldVersion >= 2) db.deleteObjectStore("meals");
-                db.createObjectStore(MEAL_COMPONENTS_STORE, { keyPath: "name" });
+                const mcStore = db.createObjectStore(MEAL_COMPONENTS_STORE, { keyPath: "name" });
+                mcStore.createIndex("by_name_lower", "nameLower");
               };
 
               if (e.oldVersion >= 2) {
@@ -86,8 +88,26 @@ function openDB(): Promise<IDBDatabase> {
           return;
         }
 
-        // v3 → v4: add mealComponents store.
-        db.createObjectStore(MEAL_COMPONENTS_STORE, { keyPath: "name" });
+        if (e.oldVersion === 3) {
+          // v3 → v5: add mealComponents store with lowercase index.
+          const mcStore = db.createObjectStore(MEAL_COMPONENTS_STORE, { keyPath: "name" });
+          mcStore.createIndex("by_name_lower", "nameLower");
+          return;
+        }
+
+        // v4 → v5: add nameLower index and back-fill existing records.
+        const mcStore = tx.objectStore(MEAL_COMPONENTS_STORE);
+        mcStore.createIndex("by_name_lower", "nameLower");
+        const cursorReq = mcStore.openCursor();
+        cursorReq.onsuccess = () => {
+          const cursor = cursorReq.result;
+          if (cursor) {
+            const rec = cursor.value as { name: string };
+            cursor.update({ ...rec, nameLower: rec.name.toLowerCase() });
+            cursor.continue();
+          }
+        };
+        cursorReq.onerror = () => reject(cursorReq.error);
       };
 
       req.onsuccess = () => resolve(req.result);
@@ -193,14 +213,16 @@ export async function getDiaryEntriesForMonth(
   );
 }
 
-/** Fetch meal component name suggestions matching the given prefix (up to 10). */
+/** Fetch meal component name suggestions matching the given prefix (case-insensitive, up to 10). */
 export async function getMealComponentSuggestions(prefix: string): Promise<string[]> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
-    const range = IDBKeyRange.bound(prefix, prefix + "￿");
+    const lower = prefix.toLowerCase();
+    const range = IDBKeyRange.bound(lower, lower + "￿");
     const req = db
       .transaction(MEAL_COMPONENTS_STORE, "readonly")
       .objectStore(MEAL_COMPONENTS_STORE)
+      .index("by_name_lower")
       .getAll(range, 10);
     req.onsuccess = () => resolve((req.result as { name: string }[]).map((r) => r.name));
     req.onerror = () => reject(req.error);
@@ -214,7 +236,7 @@ export async function saveMealComponent(name: string): Promise<void> {
     const req = db
       .transaction(MEAL_COMPONENTS_STORE, "readwrite")
       .objectStore(MEAL_COMPONENTS_STORE)
-      .put({ name });
+      .put({ name, nameLower: name.toLowerCase() });
     req.onsuccess = () => resolve();
     req.onerror = () => reject(req.error);
   });
