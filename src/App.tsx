@@ -17,17 +17,11 @@ export default function App() {
 
   return (
     <div className="app">
-      <NavBar
-        active={view}
-        onChange={setView}
-        viewYear={viewYear}
-        viewMonth={viewMonth}
-        onMonthChange={handleMonthChange}
-      />
+      <NavBar active={view} onChange={setView} />
       {view === "calendar" ? (
-        <Calendar viewYear={viewYear} viewMonth={viewMonth} />
+        <Calendar viewYear={viewYear} viewMonth={viewMonth} onMonthChange={handleMonthChange} />
       ) : (
-        <Evolution viewYear={viewYear} viewMonth={viewMonth} />
+        <Evolution viewYear={viewYear} viewMonth={viewMonth} onMonthChange={handleMonthChange} />
       )}
     </div>
   );

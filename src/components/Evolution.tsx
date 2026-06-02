@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import MonthSelector from "./MonthSelector";
 import {
   LineChart,
   Line,
@@ -67,9 +68,10 @@ function CustomTooltip({
 interface EvolutionProps {
   viewYear: number;
   viewMonth: number; // 0-indexed
+  onMonthChange: (year: number, month: number) => void;
 }
 
-export default function Evolution({ viewYear, viewMonth }: EvolutionProps) {
+export default function Evolution({ viewYear, viewMonth, onMonthChange }: EvolutionProps) {
   const month = viewMonth + 1; // storage uses 1-indexed months
 
   const [data, setData] = useState<ChartPoint[]>([]);
@@ -114,6 +116,7 @@ export default function Evolution({ viewYear, viewMonth }: EvolutionProps) {
 
   return (
     <div className="evolution">
+      <MonthSelector viewYear={viewYear} viewMonth={viewMonth} onMonthChange={onMonthChange} />
       <div className="evolution-header">
         <h2 className="evolution-title">Weight evolution</h2>
         <span className="evolution-count">

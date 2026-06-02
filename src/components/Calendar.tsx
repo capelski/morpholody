@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import Day from "./Day";
+import MonthSelector from "./MonthSelector";
 import { getDayDataForMonth } from "../storage";
 import "./Calendar.css";
 
@@ -20,9 +21,10 @@ function getFirstDayOfMonth(year: number, month: number): number {
 interface CalendarProps {
   viewYear: number;
   viewMonth: number;
+  onMonthChange: (year: number, month: number) => void;
 }
 
-export default function Calendar({ viewYear, viewMonth }: CalendarProps) {
+export default function Calendar({ viewYear, viewMonth, onMonthChange }: CalendarProps) {
   const today = new Date();
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [dayData, setDayData] = useState<
@@ -90,6 +92,8 @@ export default function Calendar({ viewYear, viewMonth }: CalendarProps) {
   return (
     <>
       <div className="calendar">
+        <MonthSelector viewYear={viewYear} viewMonth={viewMonth} onMonthChange={onMonthChange} />
+        
         <div className="calendar-weekdays">
           {DAYS_OF_WEEK.map((d) => (
             <div key={d} className="weekday">
