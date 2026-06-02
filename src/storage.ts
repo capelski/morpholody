@@ -1,5 +1,5 @@
 const DB_NAME = "morpholody";
-const DB_VERSION = 6;
+const DB_VERSION = 7;
 const DIARY_STORE = "diary";
 const MEAL_COMPONENTS_STORE = "mealComponents";
 
@@ -17,8 +17,9 @@ function openDB(): Promise<IDBDatabase> {
         if (e.oldVersion === 0) {
           // Fresh install — create all stores directly, no migration needed.
           db.createObjectStore(DIARY_STORE, { keyPath: "date" });
-          const mcStore = db.createObjectStore(MEAL_COMPONENTS_STORE, { keyPath: "name" });
+          const mcStore = db.createObjectStore(MEAL_COMPONENTS_STORE, { keyPath: "id" });
           mcStore.createIndex("by_name_lower", "nameLower");
+          mcStore.createIndex("by_name", "name");
           return;
         }
 
@@ -54,8 +55,9 @@ function openDB(): Promise<IDBDatabase> {
                 }
                 db.deleteObjectStore("weights");
                 if (e.oldVersion >= 2) db.deleteObjectStore("meals");
-                const mcStore = db.createObjectStore(MEAL_COMPONENTS_STORE, { keyPath: "name" });
+                const mcStore = db.createObjectStore(MEAL_COMPONENTS_STORE, { keyPath: "id" });
                 mcStore.createIndex("by_name_lower", "nameLower");
+                mcStore.createIndex("by_name", "name");
               };
 
               if (e.oldVersion >= 2) {
@@ -89,41 +91,41 @@ function openDB(): Promise<IDBDatabase> {
         }
 
         if (e.oldVersion === 3) {
-          // v3 → v5: add mealComponents store with lowercase index.
-          const mcStore = db.createObjectStore(MEAL_COMPONENTS_STORE, { keyPath: "name" });
+          // v3 → v7: add mealComponents store keyed by id.
+          const mcStore = db.createObjectStore(MEAL_COMPONENTS_STORE, { keyPath: "id" });
           mcStore.createIndex("by_name_lower", "nameLower");
+          mcStore.createIndex("by_name", "name");
           return;
         }
 
         if (e.oldVersion === 4) {
-          // v4 → v5: add nameLower index and back-fill existing records.
-          const mcStore = tx.objectStore(MEAL_COMPONENTS_STORE);
-          mcStore.createIndex("by_name_lower", "nameLower");
-          const cursorReq = mcStore.openCursor();
-          cursorReq.onsuccess = () => {
-            const cursor = cursorReq.result;
-            if (cursor) {
-              const rec = cursor.value as { name: string };
-              cursor.update({ ...rec, nameLower: rec.name.toLowerCase() });
-              cursor.continue();
-            }
-          };
-          cursorReq.onerror = () => reject(cursorReq.error);
-          return;
+          // v4 → v7: add nameLower index, back-fill, then recreate store keyed by id.
+          // Fall through to the v5/v6 → v7 block below by not returning.
+          const oldStore = tx.objectStore(MEAL_COMPONENTS_STORE);
+          if (!oldStore.indexNames.contains("by_name_lower")) {
+            oldStore.createIndex("by_name_lower", "nameLower");
+          }
         }
 
-        // v5 → v6: back-fill id (UUID) on existing mealComponents records.
-        const mcStore = tx.objectStore(MEAL_COMPONENTS_STORE);
-        const cursorReq = mcStore.openCursor();
-        cursorReq.onsuccess = () => {
-          const cursor = cursorReq.result;
-          if (cursor) {
-            const rec = cursor.value as { id?: string };
-            if (!rec.id) cursor.update({ ...rec, id: crypto.randomUUID() });
-            cursor.continue();
-          }
-        };
-        cursorReq.onerror = () => reject(cursorReq.error);
+        // v4/v5/v6 → v7: recreate mealComponents store keyed by id instead of name.
+        // Back-fills nameLower and id on any records that predate those fields.
+        {
+          const oldStore = tx.objectStore(MEAL_COMPONENTS_STORE);
+          const allRecsReq = oldStore.getAll();
+          allRecsReq.onsuccess = () => {
+            const recs = allRecsReq.result as Array<Record<string, unknown>>;
+            db.deleteObjectStore(MEAL_COMPONENTS_STORE);
+            const newStore = db.createObjectStore(MEAL_COMPONENTS_STORE, { keyPath: "id" });
+            newStore.createIndex("by_name_lower", "nameLower");
+            newStore.createIndex("by_name", "name");
+            for (const rec of recs) {
+              if (!rec.id) rec.id = crypto.randomUUID();
+              if (!rec.nameLower) rec.nameLower = (rec.name as string).toLowerCase();
+              newStore.put(rec);
+            }
+          };
+          allRecsReq.onerror = () => reject(allRecsReq.error);
+        }
       };
 
       req.onsuccess = () => resolve(req.result);
@@ -281,10 +283,13 @@ export async function getAllMealComponents(): Promise<StoredMealComponent[]> {
 /** Upsert a meal component into the mealComponents store. Returns the component's id. */
 export async function saveMealComponent(name: string, caloriesPerUnit: number, units?: string): Promise<string> {
   const db = await openDB();
-  const store = db.transaction(MEAL_COMPONENTS_STORE, "readwrite").objectStore(MEAL_COMPONENTS_STORE);
-  // Preserve existing id if the record already exists.
+  // Look up any existing record by name to preserve its id.
   const existing = await new Promise<{ id?: string } | undefined>((res, rej) => {
-    const r = store.get(name);
+    const r = db
+      .transaction(MEAL_COMPONENTS_STORE, "readonly")
+      .objectStore(MEAL_COMPONENTS_STORE)
+      .index("by_name")
+      .get(name);
     r.onsuccess = () => res(r.result as { id?: string } | undefined);
     r.onerror = () => rej(r.error);
   });
