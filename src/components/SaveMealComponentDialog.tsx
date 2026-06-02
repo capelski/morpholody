@@ -3,7 +3,7 @@ import "./SaveMealComponentDialog.css";
 
 interface SaveMealComponentDialogProps {
   initialName: string;
-  onSave: (name: string, caloriesPerUnit: number) => void;
+  onSave: (name: string, caloriesPerUnit: number, units: string) => void;
   onCancel: () => void;
 }
 
@@ -14,6 +14,7 @@ export default function SaveMealComponentDialog({
 }: SaveMealComponentDialogProps) {
   const [name, setName] = useState(initialName);
   const [calStr, setCalStr] = useState("");
+  const [units, setUnits] = useState("");
   const calRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -32,7 +33,7 @@ export default function SaveMealComponentDialog({
     e.preventDefault();
     const cal = parseFloat(calStr);
     if (!name.trim() || isNaN(cal) || cal <= 0) return;
-    onSave(name.trim(), cal);
+    onSave(name.trim(), cal, units);
   }
 
   const valid = name.trim() !== "" && parseFloat(calStr) > 0;
@@ -62,6 +63,19 @@ export default function SaveMealComponentDialog({
               className="mcd-input"
               value={name}
               onChange={(e) => setName(e.target.value)}
+            />
+          </div>
+          <div className="mcd-field">
+            <label className="mcd-label" htmlFor="mcd-units">
+              Units
+            </label>
+            <input
+              id="mcd-units"
+              type="text"
+              className="mcd-input"
+              placeholder="100g, 1 tbsp, 25oz, etc."
+              value={units}
+              onChange={(e) => setUnits(e.target.value)}
             />
           </div>
           <div className="mcd-field">

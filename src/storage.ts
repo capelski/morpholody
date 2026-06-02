@@ -238,13 +238,15 @@ export async function getMealComponentSuggestions(
 }
 
 /** Upsert a meal component into the mealComponents store. */
-export async function saveMealComponent(name: string, caloriesPerUnit: number): Promise<void> {
+export async function saveMealComponent(name: string, caloriesPerUnit: number, units?: string): Promise<void> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
+    const doc: Record<string, unknown> = { name, nameLower: name.toLowerCase(), caloriesPerUnit };
+    if (units && units.trim()) doc.units = units.trim();
     const req = db
       .transaction(MEAL_COMPONENTS_STORE, "readwrite")
       .objectStore(MEAL_COMPONENTS_STORE)
-      .put({ name, nameLower: name.toLowerCase(), caloriesPerUnit });
+      .put(doc);
     req.onsuccess = () => resolve();
     req.onerror = () => reject(req.error);
   });

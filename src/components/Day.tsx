@@ -189,8 +189,8 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
     setSavingComponent({ name, mi, ci });
   }
 
-  async function handleSaveMealComponent(name: string, caloriesPerUnit: number) {
-    await saveMealComponent(name, caloriesPerUnit);
+  async function handleSaveMealComponent(name: string, caloriesPerUnit: number, units: string) {
+    await saveMealComponent(name, caloriesPerUnit, units);
     if (savingComponent) {
       const qty = meals[savingComponent.mi].components[savingComponent.ci].quantity;
       const calories = qty != null ? Math.round(caloriesPerUnit * qty) : null;
