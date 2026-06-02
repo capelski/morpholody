@@ -17,15 +17,28 @@ interface DiaryListProps {
   onMonthChange: (year: number, month: number) => void;
 }
 
+interface Row {
+  dateStr: string;
+  entry: DiaryEntry | null;
+}
+
+function buildRows(year: number, month: number, entries: DiaryEntry[]): Row[] {
+  const entryMap = new Map(entries.map((e) => [e.date, e]));
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const rows: Row[] = [];
+  for (let d = daysInMonth; d >= 1; d--) {
+    const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+    rows.push({ dateStr, entry: entryMap.get(dateStr) ?? null });
+  }
+  return rows;
+}
+
 export default function DiaryList({ viewYear, viewMonth, onMonthChange }: DiaryListProps) {
   const [entries, setEntries] = useState<DiaryEntry[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
   function reload() {
-    getDiaryEntriesForMonth(viewYear, viewMonth + 1).then((all) => {
-      const sorted = [...all].sort((a, b) => b.date.localeCompare(a.date));
-      setEntries(sorted);
-    });
+    getDiaryEntriesForMonth(viewYear, viewMonth + 1).then(setEntries);
   }
 
   useEffect(() => {
@@ -33,8 +46,8 @@ export default function DiaryList({ viewYear, viewMonth, onMonthChange }: DiaryL
     setSelectedDate(null);
   }, [viewYear, viewMonth]);
 
-  function handleRowClick(entry: DiaryEntry) {
-    const [y, m, d] = entry.date.split("-").map(Number);
+  function handleRowClick(dateStr: string) {
+    const [y, m, d] = dateStr.split("-").map(Number);
     const date = new Date(y, m - 1, d);
     if (selectedDate?.toDateString() === date.toDateString()) {
       setSelectedDate(null);
@@ -52,48 +65,43 @@ export default function DiaryList({ viewYear, viewMonth, onMonthChange }: DiaryL
   }
 
   function totalCalories(entry: DiaryEntry): number | null {
-    const sum = entry.meals.reduce<number | null>((acc, meal) => {
+    return entry.meals.reduce<number | null>((acc, meal) => {
       if (meal.calories == null) return acc;
       return (acc ?? 0) + meal.calories;
     }, null);
-    return sum;
   }
+
+  const rows = buildRows(viewYear, viewMonth, entries);
 
   return (
     <>
       <div className="diary-list">
         <MonthSelector viewYear={viewYear} viewMonth={viewMonth} onMonthChange={onMonthChange} />
 
-        {entries.length === 0 ? (
-          <p className="diary-list-empty">No entries for {MONTHS[viewMonth]} {viewYear}.</p>
-        ) : (
-          <ul className="diary-list-entries">
-            {entries.map((entry) => {
-              const cal = totalCalories(entry);
-              const isSelected = selectedDate?.toDateString() === (() => {
-                const [y, m, d] = entry.date.split("-").map(Number);
-                return new Date(y, m - 1, d).toDateString();
-              })();
-              return (
-                <li
-                  key={entry.date}
-                  className={`diary-list-row${isSelected ? " selected" : ""}`}
-                  onClick={() => handleRowClick(entry)}
-                >
-                  <span className="diary-list-date">{formatDate(entry.date)}</span>
-                  <span className="diary-list-meta">
-                    {entry.weight != null && (
-                      <span className="diary-list-weight">{entry.weight} kg</span>
-                    )}
-                    {cal != null && (
-                      <span className="diary-list-cal">{cal} kcal</span>
-                    )}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-        )}
+        <ul className="diary-list-entries">
+          {rows.map(({ dateStr, entry }) => {
+            const [y, m, d] = dateStr.split("-").map(Number);
+            const isSelected = selectedDate?.toDateString() === new Date(y, m - 1, d).toDateString();
+            const cal = entry ? totalCalories(entry) : null;
+            return (
+              <li
+                key={dateStr}
+                className={`diary-list-row${isSelected ? " selected" : ""}${!entry ? " empty" : ""}`}
+                onClick={() => handleRowClick(dateStr)}
+              >
+                <span className="diary-list-date">{formatDate(dateStr)}</span>
+                <span className="diary-list-meta">
+                  {entry?.weight != null && (
+                    <span className="diary-list-weight">{entry.weight} kg</span>
+                  )}
+                  {cal != null && (
+                    <span className="diary-list-cal">{cal} kcal</span>
+                  )}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
       </div>
 
       {selectedDate && (
