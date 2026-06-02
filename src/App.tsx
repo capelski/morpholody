@@ -2,6 +2,7 @@ import { useState } from "react";
 import NavBar, { type View } from "./components/NavBar";
 import Calendar from "./components/Calendar";
 import Evolution from "./components/Evolution";
+import Components from "./components/Components";
 import "./App.css";
 
 export default function App() {
@@ -20,8 +21,10 @@ export default function App() {
       <NavBar active={view} onChange={setView} />
       {view === "calendar" ? (
         <Calendar viewYear={viewYear} viewMonth={viewMonth} onMonthChange={handleMonthChange} />
-      ) : (
+      ) : view === "evolution" ? (
         <Evolution viewYear={viewYear} viewMonth={viewMonth} onMonthChange={handleMonthChange} />
+      ) : (
+        <Components />
       )}
     </div>
   );

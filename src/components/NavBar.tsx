@@ -1,6 +1,6 @@
 import "./NavBar.css";
 
-export type View = "calendar" | "evolution";
+export type View = "calendar" | "evolution" | "components";
 
 interface NavBarProps {
   active: View;
@@ -24,6 +24,13 @@ export default function NavBar({ active, onChange }: NavBarProps) {
         >
           <span className="navbar-icon">&#128200;</span>
           Evolution
+        </button>
+        <button
+          className={`navbar-item ${active === "components" ? "active" : ""}`}
+          onClick={() => onChange("components")}
+        >
+          <span className="navbar-icon">&#129379;</span>
+          Components
         </button>
       </div>
     </nav>

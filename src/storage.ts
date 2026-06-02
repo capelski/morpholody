@@ -238,6 +238,27 @@ export async function getMealComponentSuggestions(
   });
 }
 
+export interface StoredMealComponent {
+  name: string;
+  nameLower: string;
+  caloriesPerUnit: number;
+  units?: string;
+}
+
+/** Return all meal components sorted by name (case-insensitive). */
+export async function getAllMealComponents(): Promise<StoredMealComponent[]> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const req = db
+      .transaction(MEAL_COMPONENTS_STORE, "readonly")
+      .objectStore(MEAL_COMPONENTS_STORE)
+      .index("by_name_lower")
+      .getAll();
+    req.onsuccess = () => resolve(req.result as StoredMealComponent[]);
+    req.onerror = () => reject(req.error);
+  });
+}
+
 /** Upsert a meal component into the mealComponents store. */
 export async function saveMealComponent(name: string, caloriesPerUnit: number, units?: string): Promise<void> {
   const db = await openDB();
