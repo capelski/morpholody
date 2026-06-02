@@ -3,18 +3,24 @@ import "./SaveMealComponentDialog.css";
 
 interface SaveMealComponentDialogProps {
   initialName: string;
+  initialCaloriesPerUnit?: number;
+  initialUnits?: string;
+  title?: string;
   onSave: (name: string, caloriesPerUnit: number, units: string) => void;
   onCancel: () => void;
 }
 
 export default function SaveMealComponentDialog({
   initialName,
+  initialCaloriesPerUnit,
+  initialUnits,
+  title = "New meal component",
   onSave,
   onCancel,
 }: SaveMealComponentDialogProps) {
   const [name, setName] = useState(initialName);
-  const [calStr, setCalStr] = useState("");
-  const [units, setUnits] = useState("");
+  const [calStr, setCalStr] = useState(initialCaloriesPerUnit != null ? String(initialCaloriesPerUnit) : "");
+  const [units, setUnits] = useState(initialUnits ?? "");
   const calRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -49,7 +55,7 @@ export default function SaveMealComponentDialog({
       >
         <div className="mcd-header">
           <h2 className="mcd-title" id="mcd-title">
-            New meal component
+            {title}
           </h2>
         </div>
         <form className="mcd-body" onSubmit={handleSubmit}>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { getAllMealComponents, type StoredMealComponent } from "../storage";
+import { getAllMealComponents, saveMealComponent, type StoredMealComponent } from "../storage";
+import SaveMealComponentDialog from "./SaveMealComponentDialog";
 import "./Components.css";
 
 const PAGE_SIZE = 20;
@@ -8,10 +9,21 @@ export default function Components() {
   const [all, setAll] = useState<StoredMealComponent[]>([]);
   const [filter, setFilter] = useState("");
   const [page, setPage] = useState(0);
+  const [editing, setEditing] = useState<StoredMealComponent | null>(null);
+
+  function reload() {
+    getAllMealComponents().then(setAll);
+  }
 
   useEffect(() => {
-    getAllMealComponents().then(setAll);
+    reload();
   }, []);
+
+  async function handleSave(name: string, caloriesPerUnit: number, units: string) {
+    await saveMealComponent(name, caloriesPerUnit, units);
+    setEditing(null);
+    reload();
+  }
 
   const filtered = filter.trim()
     ? all.filter((c) => c.nameLower.includes(filter.trim().toLowerCase()))
@@ -48,6 +60,7 @@ export default function Components() {
                 <th>Name</th>
                 <th>Cal / unit</th>
                 <th>Units</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -56,6 +69,15 @@ export default function Components() {
                   <td>{c.name}</td>
                   <td className="components-cell-num">{c.caloriesPerUnit}</td>
                   <td>{c.units ?? "—"}</td>
+                  <td className="components-cell-action">
+                    <button
+                      className="components-edit-btn"
+                      onClick={() => setEditing(c)}
+                      aria-label={`Edit ${c.name}`}
+                    >
+                      Edit
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -81,6 +103,16 @@ export default function Components() {
             </button>
           </div>
         </>
+      )}
+      {editing && (
+        <SaveMealComponentDialog
+          title="Edit meal component"
+          initialName={editing.name}
+          initialCaloriesPerUnit={editing.caloriesPerUnit}
+          initialUnits={editing.units}
+          onSave={handleSave}
+          onCancel={() => setEditing(null)}
+        />
       )}
     </div>
   );
