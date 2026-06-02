@@ -448,7 +448,7 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
                               min="1"
                               step="1"
                               value={comp.calories != null ? String(comp.calories) : ""}
-                              readOnly={!editingMeals || comp.caloriesPerUnit != null}
+                              readOnly={!editingMeals || comp.mealComponentId != null}
                               onChange={(e) =>
                                 updateComponent(mi, ci, { calories: parseCal(e.target.value) })
                               }
