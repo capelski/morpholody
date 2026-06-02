@@ -2,13 +2,6 @@
   width: 100%;
 }
 
-.diary-list-empty {
-  text-align: center;
-  color: #a0aec0;
-  font-size: 0.9rem;
-  padding: 2rem 0;
-}
-
 .diary-list-entries {
   list-style: none;
   display: flex;
@@ -17,9 +10,6 @@
 }
 
 .diary-list-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   padding: 0.65rem 0.75rem;
   border-radius: 8px;
   cursor: pointer;
@@ -34,6 +24,12 @@
 .diary-list-row.selected {
   background: #3182ce;
   color: #ffffff;
+}
+
+.diary-list-row-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .diary-list-date {
@@ -66,4 +62,59 @@
 
 .diary-list-row.selected .diary-list-cal {
   color: rgba(255, 255, 255, 0.85);
+}
+
+/* Meals */
+.diary-list-meals {
+  list-style: none;
+  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.diary-list-meal {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.diary-list-meal-time {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #718096;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.diary-list-row.selected .diary-list-meal-time {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.diary-list-components {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding-left: 0.5rem;
+}
+
+.diary-list-component {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.82rem;
+}
+
+.diary-list-component-name {
+  color: inherit;
+}
+
+.diary-list-component-cal {
+  font-size: 0.78rem;
+  color: #a0aec0;
+}
+
+.diary-list-row.selected .diary-list-component-cal {
+  color: rgba(255, 255, 255, 0.6);
 }

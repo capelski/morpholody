@@ -4,11 +4,6 @@ import Day from "./Day";
 import MonthSelector from "./MonthSelector";
 import "./DiaryList.css";
 
-const MONTHS = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
-];
-
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 interface DiaryListProps {
@@ -59,9 +54,7 @@ export default function DiaryList({ viewYear, viewMonth, onMonthChange }: DiaryL
   function formatDate(dateStr: string) {
     const [y, m, d] = dateStr.split("-").map(Number);
     const date = new Date(y, m - 1, d);
-    const weekday = WEEKDAYS[date.getDay()];
-    const month = MONTHS[m - 1].slice(0, 3);
-    return `${weekday}, ${month} ${d}, ${y}`;
+    return `${WEEKDAYS[date.getDay()]}, ${d}`;
   }
 
   function totalCalories(entry: DiaryEntry): number | null {
@@ -83,21 +76,43 @@ export default function DiaryList({ viewYear, viewMonth, onMonthChange }: DiaryL
             const [y, m, d] = dateStr.split("-").map(Number);
             const isSelected = selectedDate?.toDateString() === new Date(y, m - 1, d).toDateString();
             const cal = entry ? totalCalories(entry) : null;
+            const meals = entry?.meals.filter((meal) => meal.components.length > 0) ?? [];
             return (
               <li
                 key={dateStr}
                 className={`diary-list-row${isSelected ? " selected" : ""}${!entry ? " empty" : ""}`}
                 onClick={() => handleRowClick(dateStr)}
               >
-                <span className="diary-list-date">{formatDate(dateStr)}</span>
-                <span className="diary-list-meta">
-                  {entry?.weight != null && (
-                    <span className="diary-list-weight">{entry.weight} kg</span>
-                  )}
-                  {cal != null && (
-                    <span className="diary-list-cal">{cal} kcal</span>
-                  )}
-                </span>
+                <div className="diary-list-row-header">
+                  <span className="diary-list-date">{formatDate(dateStr)}</span>
+                  <span className="diary-list-meta">
+                    {entry?.weight != null && (
+                      <span className="diary-list-weight">{entry.weight} kg</span>
+                    )}
+                    {cal != null && (
+                      <span className="diary-list-cal">{cal} kcal</span>
+                    )}
+                  </span>
+                </div>
+                {meals.length > 0 && (
+                  <ul className="diary-list-meals">
+                    {meals.map((meal, i) => (
+                      <li key={i} className="diary-list-meal">
+                        <span className="diary-list-meal-time">{meal.time}</span>
+                        <ul className="diary-list-components">
+                          {meal.components.map((c, j) => (
+                            <li key={j} className="diary-list-component">
+                              <span className="diary-list-component-name">{c.name}</span>
+                              {c.calories != null && (
+                                <span className="diary-list-component-cal">{c.calories} kcal</span>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </li>
             );
           })}
