@@ -26,7 +26,7 @@ function buildRows(year: number, month: number, entries: DiaryEntry[]): Row[] {
   const entryMap = new Map(entries.map((e) => [e.date, e]));
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const rows: Row[] = [];
-  for (let d = daysInMonth; d >= 1; d--) {
+  for (let d = 1; d <= daysInMonth; d++) {
     const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
     rows.push({ dateStr, entry: entryMap.get(dateStr) ?? null });
   }
