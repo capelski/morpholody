@@ -1,5 +1,5 @@
 const DB_NAME = "morpholody";
-const DB_VERSION = 5;
+const DB_VERSION = 6;
 const DIARY_STORE = "diary";
 const MEAL_COMPONENTS_STORE = "mealComponents";
 
@@ -95,15 +95,31 @@ function openDB(): Promise<IDBDatabase> {
           return;
         }
 
-        // v4 → v5: add nameLower index and back-fill existing records.
+        if (e.oldVersion === 4) {
+          // v4 → v5: add nameLower index and back-fill existing records.
+          const mcStore = tx.objectStore(MEAL_COMPONENTS_STORE);
+          mcStore.createIndex("by_name_lower", "nameLower");
+          const cursorReq = mcStore.openCursor();
+          cursorReq.onsuccess = () => {
+            const cursor = cursorReq.result;
+            if (cursor) {
+              const rec = cursor.value as { name: string };
+              cursor.update({ ...rec, nameLower: rec.name.toLowerCase() });
+              cursor.continue();
+            }
+          };
+          cursorReq.onerror = () => reject(cursorReq.error);
+          return;
+        }
+
+        // v5 → v6: back-fill id (UUID) on existing mealComponents records.
         const mcStore = tx.objectStore(MEAL_COMPONENTS_STORE);
-        mcStore.createIndex("by_name_lower", "nameLower");
         const cursorReq = mcStore.openCursor();
         cursorReq.onsuccess = () => {
           const cursor = cursorReq.result;
           if (cursor) {
-            const rec = cursor.value as { name: string };
-            cursor.update({ ...rec, nameLower: rec.name.toLowerCase() });
+            const rec = cursor.value as { id?: string };
+            if (!rec.id) cursor.update({ ...rec, id: crypto.randomUUID() });
             cursor.continue();
           }
         };
@@ -129,6 +145,7 @@ export interface MealComponent {
   name: string;
   quantity: number | null;
   calories: number | null;
+  mealComponentId?: string | null;
 }
 
 export interface DiaryEntry {
@@ -216,7 +233,7 @@ export async function getDiaryEntriesForMonth(
 /** Fetch meal component suggestions matching the given prefix (case-insensitive, up to 10). */
 export async function getMealComponentSuggestions(
   prefix: string,
-): Promise<{ name: string; caloriesPerUnit: number }[]> {
+): Promise<{ id: string; name: string; caloriesPerUnit: number; units?: string }[]> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const lower = prefix.toLowerCase();
@@ -228,7 +245,8 @@ export async function getMealComponentSuggestions(
       .getAll(range, 10);
     req.onsuccess = () =>
       resolve(
-        (req.result as { name: string; caloriesPerUnit?: number; units?: string }[]).map((r) => ({
+        (req.result as { id?: string; name: string; caloriesPerUnit?: number; units?: string }[]).map((r) => ({
+          id: r.id ?? "",
           name: r.name,
           caloriesPerUnit: r.caloriesPerUnit ?? 0,
           units: r.units,
@@ -239,6 +257,7 @@ export async function getMealComponentSuggestions(
 }
 
 export interface StoredMealComponent {
+  id: string;
   name: string;
   nameLower: string;
   caloriesPerUnit: number;
@@ -259,17 +278,23 @@ export async function getAllMealComponents(): Promise<StoredMealComponent[]> {
   });
 }
 
-/** Upsert a meal component into the mealComponents store. */
-export async function saveMealComponent(name: string, caloriesPerUnit: number, units?: string): Promise<void> {
+/** Upsert a meal component into the mealComponents store. Returns the component's id. */
+export async function saveMealComponent(name: string, caloriesPerUnit: number, units?: string): Promise<string> {
   const db = await openDB();
+  const store = db.transaction(MEAL_COMPONENTS_STORE, "readwrite").objectStore(MEAL_COMPONENTS_STORE);
+  // Preserve existing id if the record already exists.
+  const existing = await new Promise<{ id?: string } | undefined>((res, rej) => {
+    const r = store.get(name);
+    r.onsuccess = () => res(r.result as { id?: string } | undefined);
+    r.onerror = () => rej(r.error);
+  });
+  const id = existing?.id ?? crypto.randomUUID();
+  const doc: Record<string, unknown> = { id, name, nameLower: name.toLowerCase(), caloriesPerUnit };
+  if (units && units.trim()) doc.units = units.trim();
   return new Promise((resolve, reject) => {
-    const doc: Record<string, unknown> = { name, nameLower: name.toLowerCase(), caloriesPerUnit };
-    if (units && units.trim()) doc.units = units.trim();
-    const req = db
-      .transaction(MEAL_COMPONENTS_STORE, "readwrite")
-      .objectStore(MEAL_COMPONENTS_STORE)
-      .put(doc);
-    req.onsuccess = () => resolve();
+    const tx = db.transaction(MEAL_COMPONENTS_STORE, "readwrite");
+    const req = tx.objectStore(MEAL_COMPONENTS_STORE).put(doc);
+    req.onsuccess = () => resolve(id);
     req.onerror = () => reject(req.error);
   });
 }

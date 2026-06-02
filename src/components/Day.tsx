@@ -9,6 +9,7 @@ interface ComponentEntry {
   calories: number | null;
   caloriesPerUnit: number | null;
   units?: string;
+  mealComponentId: string | null;
 }
 
 interface MealEntry {
@@ -44,7 +45,7 @@ function parseQty(s: string): number | null {
 }
 
 function ghostComponent(): ComponentEntry {
-  return { name: "", quantity: null, calories: null, caloriesPerUnit: null };
+  return { name: "", quantity: null, calories: null, caloriesPerUnit: null, mealComponentId: null };
 }
 
 function ghostMeal(afterTime?: string): MealEntry {
@@ -64,7 +65,7 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
   const [nameSuggestions, setNameSuggestions] = useState<{
     mi: number;
     ci: number;
-    items: { name: string; caloriesPerUnit: number }[];
+    items: { id: string; name: string; caloriesPerUnit: number; units?: string }[];
     active: number;
     hasExactMatch: boolean;
   } | null>(null);
@@ -85,7 +86,7 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
         time: m.time,
         components:
           m.components && m.components.length > 0
-            ? [...m.components.map((c) => ({ name: c.name, quantity: typeof c.quantity === "string" ? parseQty(c.quantity) : c.quantity, calories: c.calories ?? null, caloriesPerUnit: null })), ghostComponent()]
+            ? [...m.components.map((c) => ({ name: c.name, quantity: typeof c.quantity === "string" ? parseQty(c.quantity) : c.quantity, calories: c.calories ?? null, caloriesPerUnit: null, mealComponentId: c.mealComponentId ?? null })), ghostComponent()]
             : [ghostComponent()],
       }));
       const last = loaded[loaded.length - 1];
@@ -172,7 +173,7 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
     }
   }
 
-  function selectSuggestion(suggestion: { name: string; caloriesPerUnit: number; units?: string }) {
+  function selectSuggestion(suggestion: { id: string; name: string; caloriesPerUnit: number; units?: string }) {
     if (!nameSuggestions) return;
     const { mi, ci } = nameSuggestions;
     const qty = meals[mi].components[ci].quantity;
@@ -182,6 +183,7 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
       caloriesPerUnit: suggestion.caloriesPerUnit,
       calories,
       units: suggestion.units,
+      mealComponentId: suggestion.id,
     });
     setNameSuggestions(null);
   }
@@ -192,11 +194,11 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
   }
 
   async function handleSaveMealComponent(name: string, caloriesPerUnit: number, units: string) {
-    await saveMealComponent(name, caloriesPerUnit, units);
+    const mealComponentId = await saveMealComponent(name, caloriesPerUnit, units);
     if (savingComponent) {
       const qty = meals[savingComponent.mi].components[savingComponent.ci].quantity;
       const calories = qty != null ? Math.round(caloriesPerUnit * qty) : null;
-      updateComponent(savingComponent.mi, savingComponent.ci, { caloriesPerUnit, calories });
+      updateComponent(savingComponent.mi, savingComponent.ci, { caloriesPerUnit, calories, mealComponentId });
     }
     setSavingComponent(null);
   }
