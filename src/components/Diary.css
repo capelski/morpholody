@@ -4,6 +4,7 @@
 
 .diary-tabs {
   display: flex;
+  justify-content: center;
   gap: 0.25rem;
   margin-bottom: 1.25rem;
   border-bottom: 1px solid #e2e8f0;
