@@ -30,12 +30,12 @@ export default function SaveMealComponentDialog({
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const cal = parseInt(calStr, 10);
+    const cal = parseFloat(calStr);
     if (!name.trim() || isNaN(cal) || cal <= 0) return;
     onSave(name.trim(), cal);
   }
 
-  const valid = name.trim() !== "" && parseInt(calStr, 10) > 0;
+  const valid = name.trim() !== "" && parseFloat(calStr) > 0;
 
   return (
     <div className="mcd-overlay" onPointerDown={onCancel}>
@@ -75,8 +75,8 @@ export default function SaveMealComponentDialog({
                 type="number"
                 className="mcd-input"
                 placeholder="0"
-                min="1"
-                step="1"
+                min="0.001"
+                step="any"
                 value={calStr}
                 onChange={(e) => setCalStr(e.target.value)}
               />
