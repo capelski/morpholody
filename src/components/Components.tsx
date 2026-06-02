@@ -10,6 +10,7 @@ export default function Components() {
   const [filter, setFilter] = useState("");
   const [page, setPage] = useState(0);
   const [editing, setEditing] = useState<StoredMealComponent | null>(null);
+  const [creating, setCreating] = useState(false);
 
   function reload() {
     getAllMealComponents().then(setAll);
@@ -22,6 +23,7 @@ export default function Components() {
   async function handleSave(name: string, caloriesPerUnit: number, units: string) {
     await saveMealComponent(name, caloriesPerUnit, units);
     setEditing(null);
+    setCreating(false);
     reload();
   }
 
@@ -48,6 +50,9 @@ export default function Components() {
           value={filter}
           onChange={(e) => handleFilterChange(e.target.value)}
         />
+        <button className="components-new-btn" onClick={() => setCreating(true)}>
+          + New
+        </button>
       </div>
 
       {filtered.length === 0 ? (
@@ -103,6 +108,13 @@ export default function Components() {
             </button>
           </div>
         </>
+      )}
+      {creating && (
+        <SaveMealComponentDialog
+          initialName=""
+          onSave={handleSave}
+          onCancel={() => setCreating(false)}
+        />
       )}
       {editing && (
         <SaveMealComponentDialog

@@ -3,11 +3,13 @@
 }
 
 .components-toolbar {
+  display: flex;
+  gap: 0.75rem;
   margin-bottom: 1rem;
 }
 
 .components-filter {
-  width: 100%;
+  flex: 1;
   box-sizing: border-box;
   padding: 0.5rem 0.75rem;
   border: 1px solid #e2e8f0;
@@ -24,6 +26,24 @@
   border-color: #3182ce;
   box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.15);
   background: #ffffff;
+}
+
+.components-new-btn {
+  flex-shrink: 0;
+  padding: 0.5rem 1rem;
+  background: #3182ce;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: inherit;
+  color: #ffffff;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.components-new-btn:hover {
+  background: #2b6cb0;
 }
 
 .components-empty {
