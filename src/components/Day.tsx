@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { toDateKey, getDiaryEntry, saveDiaryEntry, getMealComponentSuggestions, saveMealComponent } from "../storage";
+import SaveMealComponentDialog from "./SaveMealComponentDialog";
 import "./Day.css";
 
 interface ComponentEntry {
@@ -65,6 +66,7 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
     active: number;
     hasExactMatch: boolean;
   } | null>(null);
+  const [savingComponentName, setSavingComponentName] = useState<string | null>(null);
   const weightRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -170,9 +172,14 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
     setNameSuggestions(null);
   }
 
-  async function saveAndSelectNew(name: string) {
-    await saveMealComponent(name);
+  function saveAndSelectNew(name: string) {
     setNameSuggestions(null);
+    setSavingComponentName(name);
+  }
+
+  async function handleSaveMealComponent(name: string, caloriesPerUnit: number) {
+    await saveMealComponent(name, caloriesPerUnit);
+    setSavingComponentName(null);
   }
 
   function handleNameKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -244,6 +251,7 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
   }, null);
 
   return (
+    <>
     <div className="day-overlay" onPointerDown={onClose}>
       <div
         className="day-panel"
@@ -452,5 +460,13 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
         </form>
       </div>
     </div>
+    {savingComponentName !== null && (
+      <SaveMealComponentDialog
+        initialName={savingComponentName}
+        onSave={handleSaveMealComponent}
+        onCancel={() => setSavingComponentName(null)}
+      />
+    )}
+    </>
   );
 }
