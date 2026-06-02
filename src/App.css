@@ -1,7 +1,11 @@
 .app {
-  padding: 2rem;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  width: 360px;
+  height: 100vh;
+}
+
+.app-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
 }
