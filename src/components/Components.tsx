@@ -20,8 +20,8 @@ export default function Components() {
     reload();
   }, []);
 
-  async function handleSave(name: string, caloriesPerUnit: number, units: string) {
-    await saveMealComponent(name, caloriesPerUnit, units);
+  async function handleSave(name: string, caloriesPerUnit: number, units: string, id?: string) {
+    await saveMealComponent(name, caloriesPerUnit, units, id);
     setEditing(null);
     setCreating(false);
     reload();
@@ -122,6 +122,7 @@ export default function Components() {
           initialName={editing.name}
           initialCaloriesPerUnit={editing.caloriesPerUnit}
           initialUnits={editing.units}
+          id={editing.id}
           onSave={handleSave}
           onCancel={() => setEditing(null)}
         />

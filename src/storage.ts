@@ -281,25 +281,28 @@ export async function getAllMealComponents(): Promise<StoredMealComponent[]> {
 }
 
 /** Upsert a meal component into the mealComponents store. Returns the component's id. */
-export async function saveMealComponent(name: string, caloriesPerUnit: number, units?: string): Promise<string> {
+export async function saveMealComponent(name: string, caloriesPerUnit: number, units?: string, id?: string): Promise<string> {
   const db = await openDB();
-  // Look up any existing record by name to preserve its id.
-  const existing = await new Promise<{ id?: string } | undefined>((res, rej) => {
-    const r = db
-      .transaction(MEAL_COMPONENTS_STORE, "readonly")
-      .objectStore(MEAL_COMPONENTS_STORE)
-      .index("by_name")
-      .get(name);
-    r.onsuccess = () => res(r.result as { id?: string } | undefined);
-    r.onerror = () => rej(r.error);
-  });
-  const id = existing?.id ?? crypto.randomUUID();
-  const doc: Record<string, unknown> = { id, name, nameLower: name.toLowerCase(), caloriesPerUnit };
+  let resolvedId = id;
+  if (!resolvedId) {
+    // Look up any existing record by name to preserve its id.
+    const existing = await new Promise<{ id?: string } | undefined>((res, rej) => {
+      const r = db
+        .transaction(MEAL_COMPONENTS_STORE, "readonly")
+        .objectStore(MEAL_COMPONENTS_STORE)
+        .index("by_name")
+        .get(name);
+      r.onsuccess = () => res(r.result as { id?: string } | undefined);
+      r.onerror = () => rej(r.error);
+    });
+    resolvedId = existing?.id ?? crypto.randomUUID();
+  }
+  const doc: Record<string, unknown> = { id: resolvedId, name, nameLower: name.toLowerCase(), caloriesPerUnit };
   if (units && units.trim()) doc.units = units.trim();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(MEAL_COMPONENTS_STORE, "readwrite");
     const req = tx.objectStore(MEAL_COMPONENTS_STORE).put(doc);
-    req.onsuccess = () => resolve(id);
+    req.onsuccess = () => resolve(resolvedId!);
     req.onerror = () => reject(req.error);
   });
 }

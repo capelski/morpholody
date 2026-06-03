@@ -5,8 +5,9 @@ interface SaveMealComponentDialogProps {
   initialName: string;
   initialCaloriesPerUnit?: number;
   initialUnits?: string;
+  id?: string;
   title?: string;
-  onSave: (name: string, caloriesPerUnit: number, units: string) => void;
+  onSave: (name: string, caloriesPerUnit: number, units: string, id?: string) => void;
   onCancel: () => void;
 }
 
@@ -14,6 +15,7 @@ export default function SaveMealComponentDialog({
   initialName,
   initialCaloriesPerUnit,
   initialUnits,
+  id,
   title = "New meal component",
   onSave,
   onCancel,
@@ -39,7 +41,7 @@ export default function SaveMealComponentDialog({
     e.preventDefault();
     const cal = parseFloat(calStr);
     if (!name.trim() || isNaN(cal) || cal <= 0) return;
-    onSave(name.trim(), cal, units);
+    onSave(name.trim(), cal, units, id);
   }
 
   const valid = name.trim() !== "" && parseFloat(calStr) > 0;
