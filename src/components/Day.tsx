@@ -454,7 +454,7 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
                                 </ul>
                               )}
                             </div>
-                            {editingMeals ? (
+                            {comp.mealComponentId != null && (editingMeals ? (
                               <input
                                 type="number"
                                 className="day-meal-field day-component-field--qty"
@@ -469,7 +469,7 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
                               <span className="day-meal-field day-meal-field--read day-component-field--qty">
                                 {comp.quantity != null ? String(comp.quantity) : ""}
                               </span>
-                            )}
+                            ))}
                             {editingMeals ? (
                               <input
                                 type="number"
