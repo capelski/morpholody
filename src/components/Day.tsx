@@ -269,7 +269,7 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
     const mealsToSave = meals
       .filter((m) => !isMealEmpty(m))
       .map((m) => ({
-        id: m.id ?? undefined,
+        id: m.id ?? crypto.randomUUID(),
         time: m.time,
         components: m.components
           .filter((c) => c.name.trim() !== "" || c.quantity != null)
