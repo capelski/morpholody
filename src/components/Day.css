@@ -251,6 +251,18 @@
   background: #ffffff;
 }
 
+.day-meal-field--read {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.day-meal-field--read:hover {
+  border-color: transparent;
+  background: transparent;
+}
+
 .day-meal-field--time {
   width: 86px;
   flex-shrink: 0;

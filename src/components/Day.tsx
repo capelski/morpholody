@@ -389,22 +389,27 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
                         return (
                           <li key={ci} className="day-component-row">
                             <div className="day-component-name-wrapper">
-                              <input
-                                type="text"
-                                className="day-meal-field day-component-field--name"
-                                placeholder={isGhostComp ? "Component" : ""}
-                                value={comp.name}
-                                readOnly={!editingMeals}
-                                onChange={(e) => handleNameChange(mi, ci, e.target.value)}
-                                onKeyDown={handleNameKeyDown}
-                                onBlur={handleNameBlur}
-                                aria-label="Component name"
-                                aria-autocomplete="list"
-                                aria-expanded={
-                                  nameSuggestions?.mi === mi && nameSuggestions?.ci === ci
-                                }
-                              />
-                              {nameSuggestions?.mi === mi && nameSuggestions?.ci === ci && (
+                              {editingMeals ? (
+                                <input
+                                  type="text"
+                                  className="day-meal-field day-component-field--name"
+                                  placeholder={isGhostComp ? "Component" : ""}
+                                  value={comp.name}
+                                  onChange={(e) => handleNameChange(mi, ci, e.target.value)}
+                                  onKeyDown={handleNameKeyDown}
+                                  onBlur={handleNameBlur}
+                                  aria-label="Component name"
+                                  aria-autocomplete="list"
+                                  aria-expanded={
+                                    nameSuggestions?.mi === mi && nameSuggestions?.ci === ci
+                                  }
+                                />
+                              ) : (
+                                <span className="day-meal-field day-meal-field--read day-component-field--name">
+                                  {comp.name}
+                                </span>
+                              )}
+                              {editingMeals && nameSuggestions?.mi === mi && nameSuggestions?.ci === ci && (
                                 <ul className="day-component-suggestions" role="listbox">
                                   {nameSuggestions.items.map((item, idx) => (
                                     <li
@@ -430,30 +435,41 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
                                 </ul>
                               )}
                             </div>
-                            <input
-                              type="number"
-                              className="day-meal-field day-component-field--qty"
-                              placeholder={editingMeals || isGhostComp ? (comp.units ?? "Qty") : ""}
-                              min="0"
-                              step="any"
-                              value={comp.quantity != null ? String(comp.quantity) : ""}
-                              readOnly={!editingMeals}
-                              onChange={(e) => handleQuantityChange(mi, ci, e.target.value)}
-                              aria-label="Quantity"
-                            />
-                            <input
-                              type="number"
-                              className="day-meal-field day-component-field--cal"
-                              placeholder="kcal"
-                              min="1"
-                              step="1"
-                              value={comp.calories != null ? String(comp.calories) : ""}
-                              readOnly={!editingMeals || comp.mealComponentId != null}
-                              onChange={(e) =>
-                                updateComponent(mi, ci, { calories: parseCal(e.target.value) })
-                              }
-                              aria-label="Calories"
-                            />
+                            {editingMeals ? (
+                              <input
+                                type="number"
+                                className="day-meal-field day-component-field--qty"
+                                placeholder={comp.units ?? "Qty"}
+                                min="0"
+                                step="any"
+                                value={comp.quantity != null ? String(comp.quantity) : ""}
+                                onChange={(e) => handleQuantityChange(mi, ci, e.target.value)}
+                                aria-label="Quantity"
+                              />
+                            ) : (
+                              <span className="day-meal-field day-meal-field--read day-component-field--qty">
+                                {comp.quantity != null ? String(comp.quantity) : ""}
+                              </span>
+                            )}
+                            {editingMeals ? (
+                              <input
+                                type="number"
+                                className="day-meal-field day-component-field--cal"
+                                placeholder="kcal"
+                                min="1"
+                                step="1"
+                                value={comp.calories != null ? String(comp.calories) : ""}
+                                readOnly={comp.mealComponentId != null}
+                                onChange={(e) =>
+                                  updateComponent(mi, ci, { calories: parseCal(e.target.value) })
+                                }
+                                aria-label="Calories"
+                              />
+                            ) : (
+                              <span className="day-meal-field day-meal-field--read day-component-field--cal">
+                                {comp.calories != null ? String(comp.calories) : ""}
+                              </span>
+                            )}
                             {!isGhostComp && editingMeals && (
                               <button
                                 type="button"
