@@ -331,7 +331,7 @@ export async function getAllMealComponents(): Promise<StoredMealComponent[]> {
 }
 
 /** Upsert a meal component into the mealComponents store. Returns the component's id. */
-export async function saveMealComponent(name: string, caloriesPerUnit: number, units?: string, id?: string): Promise<string> {
+export async function saveMealComponent(name: string, caloriesPerUnit: number, units?: string, id?: string, propagate = true): Promise<string> {
   const db = await openDB();
   let resolvedId = id;
   if (!resolvedId) {
@@ -356,8 +356,9 @@ export async function saveMealComponent(name: string, caloriesPerUnit: number, u
     req.onerror = () => reject(req.error);
   });
 
-  // Propagate name/calorie changes to all diary entries that reference this component.
-  await propagateMealComponentUpdate(db, resolvedId, name, caloriesPerUnit);
+  if (propagate) {
+    await propagateMealComponentUpdate(db, resolvedId, name, caloriesPerUnit);
+  }
 
   return resolvedId;
 }

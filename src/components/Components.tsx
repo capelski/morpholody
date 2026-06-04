@@ -20,8 +20,8 @@ export default function Components() {
     reload();
   }, []);
 
-  async function handleSave(name: string, caloriesPerUnit: number, units: string, id?: string) {
-    await saveMealComponent(name, caloriesPerUnit, units, id);
+  async function handleSave(name: string, caloriesPerUnit: number, units: string, id?: string, propagate?: boolean) {
+    await saveMealComponent(name, caloriesPerUnit, units, id, propagate ?? true);
     setEditing(null);
     setCreating(false);
     reload();

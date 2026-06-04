@@ -7,7 +7,7 @@ interface SaveMealComponentDialogProps {
   initialUnits?: string;
   id?: string;
   title?: string;
-  onSave: (name: string, caloriesPerUnit: number, units: string, id?: string) => void;
+  onSave: (name: string, caloriesPerUnit: number, units: string, id?: string, propagate?: boolean) => void;
   onCancel: () => void;
 }
 
@@ -23,6 +23,7 @@ export default function SaveMealComponentDialog({
   const [name, setName] = useState(initialName);
   const [calStr, setCalStr] = useState(initialCaloriesPerUnit != null ? String(initialCaloriesPerUnit) : "");
   const [units, setUnits] = useState(initialUnits ?? "");
+  const [propagate, setPropagate] = useState(true);
   const calRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -41,7 +42,7 @@ export default function SaveMealComponentDialog({
     e.preventDefault();
     const cal = parseFloat(calStr);
     if (!name.trim() || isNaN(cal) || cal <= 0) return;
-    onSave(name.trim(), cal, units, id);
+    onSave(name.trim(), cal, units, id, propagate);
   }
 
   const valid = name.trim() !== "" && parseFloat(calStr) > 0;
@@ -105,6 +106,19 @@ export default function SaveMealComponentDialog({
               <span className="mcd-input-unit">kcal</span>
             </div>
           </div>
+          {id && (
+            <div className="mcd-field mcd-field-checkbox">
+              <input
+                id="mcd-propagate"
+                type="checkbox"
+                checked={propagate}
+                onChange={(e) => setPropagate(e.target.checked)}
+              />
+              <label htmlFor="mcd-propagate">
+                Propagate changes to meals that use this component
+              </label>
+            </div>
+          )}
           <div className="mcd-actions">
             <button type="button" className="mcd-btn-cancel" onClick={onCancel}>
               Cancel
