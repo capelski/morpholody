@@ -72,6 +72,22 @@
   color: #4a5568;
 }
 
+.day-panel-nav {
+  background: none;
+  border: none;
+  font-size: 1.4rem;
+  color: #a0aec0;
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+  line-height: 1;
+  border-radius: 4px;
+  transition: color 0.12s;
+}
+
+.day-panel-nav:hover {
+  color: #4a5568;
+}
+
 /* Form body */
 .day-body {
   padding: 1.25rem;

@@ -124,6 +124,7 @@ export default function DiaryList({ viewYear, viewMonth, onMonthChange }: DiaryL
           date={selectedDate}
           onClose={() => setSelectedDate(null)}
           onSaved={() => reload()}
+          onDateChange={(d) => setSelectedDate(d)}
         />
       )}
     </>

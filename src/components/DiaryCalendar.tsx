@@ -139,6 +139,7 @@ export default function DiaryCalendar({ viewYear, viewMonth, onMonthChange }: Di
           onSaved={() => {
             getDayDataForMonth(viewYear, viewMonth + 1).then(setDayData);
           }}
+          onDateChange={(d) => setSelectedDate(d)}
         />
       )}
     </>

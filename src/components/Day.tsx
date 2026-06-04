@@ -21,6 +21,7 @@ interface DayProps {
   date: Date;
   onClose: () => void;
   onSaved?: () => void;
+  onDateChange?: (date: Date) => void;
 }
 
 function nowHHMM(): string {
@@ -58,7 +59,7 @@ function isMealEmpty(meal: MealEntry): boolean {
   return meal.components.every((c) => c.name.trim() === "" && c.quantity == null);
 }
 
-export default function Day({ date, onClose, onSaved }: DayProps) {
+export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) {
   const [weightStr, setWeightStr] = useState("");
   const [meals, setMeals] = useState<MealEntry[]>([ghostMeal()]);
   const [editingMeals, setEditingMeals] = useState(false);
@@ -292,9 +293,27 @@ export default function Day({ date, onClose, onSaved }: DayProps) {
         onPointerDown={(e) => e.stopPropagation()}
       >
         <div className="day-panel-header">
+          {onDateChange && (
+            <button
+              className="day-panel-nav"
+              onClick={() => { const d = new Date(date); d.setDate(d.getDate() - 1); onDateChange(d); }}
+              aria-label="Previous day"
+            >
+              &#8249;
+            </button>
+          )}
           <h2 className="day-panel-title" id="day-panel-title">
             {label}
           </h2>
+          {onDateChange && (
+            <button
+              className="day-panel-nav"
+              onClick={() => { const d = new Date(date); d.setDate(d.getDate() + 1); onDateChange(d); }}
+              aria-label="Next day"
+            >
+              &#8250;
+            </button>
+          )}
           <button
             className="day-panel-close"
             onClick={onClose}
