@@ -234,26 +234,33 @@ export async function getDiaryEntriesForMonth(
 
 /** Fetch meal component suggestions matching the given prefix (case-insensitive, up to 10). */
 export async function getMealComponentSuggestions(
-  prefix: string,
+  query: string,
 ): Promise<{ id: string; name: string; caloriesPerUnit: number; units?: string }[]> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
-    const lower = prefix.toLowerCase();
-    const range = IDBKeyRange.bound(lower, lower + "￿");
+    const lower = query.toLowerCase();
     const req = db
       .transaction(MEAL_COMPONENTS_STORE, "readonly")
       .objectStore(MEAL_COMPONENTS_STORE)
-      .index("by_name_lower")
-      .getAll(range, 10);
-    req.onsuccess = () =>
+      .getAll();
+    req.onsuccess = () => {
+      const all = (req.result as { id?: string; name: string; nameLower?: string; caloriesPerUnit?: number; units?: string }[]);
+      const starts: typeof all = [];
+      const contains: typeof all = [];
+      for (const r of all) {
+        const nl = r.nameLower ?? r.name.toLowerCase();
+        if (nl.startsWith(lower)) starts.push(r);
+        else if (nl.includes(lower)) contains.push(r);
+      }
       resolve(
-        (req.result as { id?: string; name: string; caloriesPerUnit?: number; units?: string }[]).map((r) => ({
+        [...starts, ...contains].slice(0, 10).map((r) => ({
           id: r.id ?? "",
           name: r.name,
           caloriesPerUnit: r.caloriesPerUnit ?? 0,
           units: r.units,
         })),
       );
+    };
     req.onerror = () => reject(req.error);
   });
 }
