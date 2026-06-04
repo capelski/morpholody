@@ -273,7 +273,7 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
         time: m.time,
         components: m.components
           .filter((c) => c.name.trim() !== "" || c.quantity != null)
-          .map((c) => ({ ...c, id: c.id ?? undefined })),
+          .map((c) => ({ ...c, id: c.id ?? crypto.randomUUID() })),
       }))
       .sort((a, b) => a.time.localeCompare(b.time));
     await saveDiaryEntry(toDateKey(date), { weight, meals: mealsToSave });
