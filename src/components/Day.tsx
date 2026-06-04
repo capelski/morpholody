@@ -429,7 +429,7 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
                                 </span>
                               )}
                               {comp.mealComponentId != null && (
-                                <span className="day-component-linked" title="Saved component" aria-label="Saved component" />
+                                <span className="day-component-linked" title="Saved component" aria-label="Saved component">🥣</span>
                               )}
                               {editingMeals && nameSuggestions?.mi === mi && nameSuggestions?.ci === ci && (
                                 <ul className="day-component-suggestions" role="listbox">

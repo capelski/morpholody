@@ -301,14 +301,11 @@
 }
 
 .day-component-linked {
-  display: inline-block;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #48bb78;
   flex-shrink: 0;
-  align-self: center;
-  margin-left: 6px;
+  font-size: 0.75rem;
+  line-height: 1;
+  margin-left: 5px;
+  opacity: 0.8;
 }
 
 .day-component-suggestions {
