@@ -339,11 +339,64 @@ export async function saveMealComponent(name: string, caloriesPerUnit: number, u
   }
   const doc: Record<string, unknown> = { id: resolvedId, name, nameLower: name.toLowerCase(), caloriesPerUnit };
   if (units && units.trim()) doc.units = units.trim();
-  return new Promise((resolve, reject) => {
+  await new Promise<void>((resolve, reject) => {
     const tx = db.transaction(MEAL_COMPONENTS_STORE, "readwrite");
     const req = tx.objectStore(MEAL_COMPONENTS_STORE).put(doc);
-    req.onsuccess = () => resolve(resolvedId!);
+    req.onsuccess = () => resolve();
     req.onerror = () => reject(req.error);
+  });
+
+  // Propagate name/calorie changes to all diary entries that reference this component.
+  await propagateMealComponentUpdate(db, resolvedId, name, caloriesPerUnit);
+
+  return resolvedId;
+}
+
+/** Update all diary entries that contain components linked to the given meal component id. */
+async function propagateMealComponentUpdate(
+  db: IDBDatabase,
+  mealComponentId: string,
+  name: string,
+  caloriesPerUnit: number,
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(DIARY_STORE, "readwrite");
+    const store = tx.objectStore(DIARY_STORE);
+    const cursorReq = store.openCursor();
+    cursorReq.onsuccess = () => {
+      const cursor = cursorReq.result;
+      if (!cursor) { resolve(); return; }
+      const entry = cursor.value as DiaryEntry;
+      let changed = false;
+      for (const meal of entry.meals) {
+        for (const comp of meal.components) {
+          if (comp.mealComponentId === mealComponentId) {
+            comp.name = name;
+            if (comp.quantity != null) {
+              comp.calories = Math.round(caloriesPerUnit * comp.quantity);
+            }
+            changed = true;
+          }
+        }
+        if (changed) {
+          meal.calories = meal.components.reduce<number | null>((s, c) => {
+            if (c.calories == null) return s;
+            return (s ?? 0) + c.calories;
+          }, null);
+        }
+      }
+      if (changed) {
+        const totalCalories = entry.meals.reduce<number | null>((s, m) => {
+          if (m.calories == null) return s;
+          return (s ?? 0) + m.calories;
+        }, null);
+        cursor.update({ ...entry, calories: totalCalories });
+      }
+      cursor.continue();
+    };
+    cursorReq.onerror = () => reject(cursorReq.error);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
   });
 }
 
