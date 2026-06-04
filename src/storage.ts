@@ -379,7 +379,7 @@ async function propagateMealComponentUpdate(
       const entry = cursor.value as DiaryEntry;
       let changed = false;
       for (const meal of entry.meals) {
-        for (const comp of meal.components) {
+        for (const comp of (meal.components ?? [])) {
           if (comp.mealComponentId === mealComponentId) {
             comp.name = name;
             if (comp.quantity != null) {
