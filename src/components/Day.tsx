@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { toDateKey, getDiaryEntry, saveDiaryEntry, getMealComponentSuggestions, saveMealComponent } from "../storage";
+import { toDateKey, getDiaryEntry, saveDiaryEntry, getMealComponentSuggestions, saveMealComponent, getMealComponentById } from "../storage";
 import SaveMealComponentDialog from "./SaveMealComponentDialog";
 import "./Day.css";
 
@@ -83,18 +83,32 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
     setWeightStr("");
     setMeals([ghostMeal()]);
     setEditingMeals(false);
-    getDiaryEntry(toDateKey(date)).then((entry) => {
+    getDiaryEntry(toDateKey(date)).then(async (entry) => {
       setWeightStr(entry?.weight != null ? String(entry.weight) : "");
-      const loaded = (entry?.meals ?? []).map((m) => ({
-        id: m.id ?? null,
-        time: m.time,
-        components:
-          m.components && m.components.length > 0
-            ? [...m.components.map((c) => ({ id: c.id ?? null, name: c.name, quantity: typeof c.quantity === "string" ? parseQty(c.quantity) : c.quantity, calories: c.calories ?? null, caloriesPerUnit: null, mealComponentId: c.mealComponentId ?? null })), ghostComponent()]
-            : [ghostComponent()],
-      }));
-      const last = loaded[loaded.length - 1];
-      setMeals([...loaded, ghostMeal(last?.time)]);
+      const loadedMeals = await Promise.all(
+        (entry?.meals ?? []).map(async (m) => ({
+          id: m.id ?? null,
+          time: m.time,
+          components:
+            m.components && m.components.length > 0
+              ? [
+                  ...(await Promise.all(
+                    m.components.map(async (c) => {
+                      let caloriesPerUnit: number | null = null;
+                      if (c.mealComponentId) {
+                        const mc = await getMealComponentById(c.mealComponentId);
+                        caloriesPerUnit = mc?.caloriesPerUnit ?? null;
+                      }
+                      return { id: c.id ?? null, name: c.name, quantity: typeof c.quantity === "string" ? parseQty(c.quantity) : c.quantity, calories: c.calories ?? null, caloriesPerUnit, mealComponentId: c.mealComponentId ?? null };
+                    })
+                  )),
+                  ghostComponent(),
+                ]
+              : [ghostComponent()],
+        }))
+      );
+      const last = loadedMeals[loadedMeals.length - 1];
+      setMeals([...loadedMeals, ghostMeal(last?.time)]);
     });
   }, [date]);
 

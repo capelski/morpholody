@@ -306,6 +306,16 @@ export interface StoredMealComponent {
   units?: string;
 }
 
+/** Return a meal component by its ID, or undefined if not found. */
+export async function getMealComponentById(id: string): Promise<StoredMealComponent | undefined> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const req = db.transaction(MEAL_COMPONENTS_STORE, "readonly").objectStore(MEAL_COMPONENTS_STORE).get(id);
+    req.onsuccess = () => resolve(req.result as StoredMealComponent | undefined);
+    req.onerror = () => reject(req.error);
+  });
+}
+
 /** Return all meal components sorted by name (case-insensitive). */
 export async function getAllMealComponents(): Promise<StoredMealComponent[]> {
   const db = await openDB();
