@@ -1,5 +1,5 @@
 const DB_NAME = "morpholody";
-const DB_VERSION = 7;
+const DB_VERSION = 8;
 const DIARY_STORE = "diary";
 const MEAL_COMPONENTS_STORE = "mealComponents";
 
@@ -109,7 +109,7 @@ function openDB(): Promise<IDBDatabase> {
 
         // v4/v5/v6 → v7: recreate mealComponents store keyed by id instead of name.
         // Back-fills nameLower and id on any records that predate those fields.
-        {
+        if (e.oldVersion < 7) {
           const oldStore = tx.objectStore(MEAL_COMPONENTS_STORE);
           const allRecsReq = oldStore.getAll();
           allRecsReq.onsuccess = () => {
@@ -125,6 +125,29 @@ function openDB(): Promise<IDBDatabase> {
             }
           };
           allRecsReq.onerror = () => reject(allRecsReq.error);
+        }
+
+        // v7 → v8: back-fill UUIDs on diary entry, each meal, and each meal component.
+        if (e.oldVersion < 8) {
+          const diaryStore = tx.objectStore(DIARY_STORE);
+          const cursorReq = diaryStore.openCursor();
+          cursorReq.onsuccess = () => {
+            const cursor = cursorReq.result;
+            if (!cursor) return;
+            const entry = cursor.value as Record<string, unknown>;
+            if (!entry.id) entry.id = crypto.randomUUID();
+            const meals = (entry.meals ?? []) as Array<Record<string, unknown>>;
+            for (const meal of meals) {
+              if (!meal.id) meal.id = crypto.randomUUID();
+              const components = (meal.components ?? []) as Array<Record<string, unknown>>;
+              for (const comp of components) {
+                if (!comp.id) comp.id = crypto.randomUUID();
+              }
+            }
+            cursor.update(entry);
+            cursor.continue();
+          };
+          cursorReq.onerror = () => reject(cursorReq.error);
         }
       };
 
@@ -144,6 +167,7 @@ export function toDateKey(date: Date): string {
 }
 
 export interface MealComponent {
+  id: string;
   name: string;
   quantity: number | null;
   calories: number | null;
@@ -151,11 +175,12 @@ export interface MealComponent {
 }
 
 export interface DiaryEntry {
+  id: string;
   date: string; // YYYY-MM-DD
   weight: number | null;
   /** Kept for backward compatibility with older entries; always null for new saves. */
   calories: number | null;
-  meals: Array<{ time: string; calories: number | null; components: MealComponent[] }>;
+  meals: Array<{ id: string; time: string; calories: number | null; components: MealComponent[] }>;
 }
 
 /** Fetch the diary entry for a given date key (YYYY-MM-DD). Returns null if none exists yet. */
@@ -174,14 +199,22 @@ export async function getDiaryEntry(date: string): Promise<DiaryEntry | null> {
 /** Write (or overwrite) the diary entry for a given date key. */
 export async function saveDiaryEntry(
   date: string,
-  data: { weight: DiaryEntry["weight"]; meals: Array<{ time: string; components: MealComponent[] }> },
+  data: { id?: string; weight: DiaryEntry["weight"]; meals: Array<{ id?: string; time: string; components: Array<MealComponent & { id?: string }> }> },
 ): Promise<void> {
-  const mealsWithCalories = data.meals.map((m) => {
-    const mealCal = m.components.reduce<number | null>((s, c) => {
+  // Fetch existing entry to preserve its top-level id if not provided.
+  const existing = await getDiaryEntry(date);
+  const entryId = data.id ?? existing?.id ?? crypto.randomUUID();
+  const mealsWithCalories = data.meals.map((m, mi) => {
+    const mealId = m.id ?? existing?.meals[mi]?.id ?? crypto.randomUUID();
+    const components = m.components.map((c, ci) => ({
+      ...c,
+      id: c.id ?? existing?.meals[mi]?.components[ci]?.id ?? crypto.randomUUID(),
+    }));
+    const mealCal = components.reduce<number | null>((s, c) => {
       if (c.calories == null) return s;
       return (s ?? 0) + c.calories;
     }, null);
-    return { ...m, calories: mealCal };
+    return { ...m, id: mealId, components, calories: mealCal };
   });
   const calories = mealsWithCalories.reduce<number | null>((sum, m) => {
     if (m.calories == null) return sum;
@@ -192,7 +225,7 @@ export async function saveDiaryEntry(
     const req = db
       .transaction(DIARY_STORE, "readwrite")
       .objectStore(DIARY_STORE)
-      .put({ date, weight: data.weight, meals: mealsWithCalories, calories });
+      .put({ id: entryId, date, weight: data.weight, meals: mealsWithCalories, calories });
     req.onsuccess = () => resolve();
     req.onerror = () => reject(req.error);
   });

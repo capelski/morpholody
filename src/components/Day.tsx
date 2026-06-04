@@ -4,6 +4,7 @@ import SaveMealComponentDialog from "./SaveMealComponentDialog";
 import "./Day.css";
 
 interface ComponentEntry {
+  id: string | null;
   name: string;
   quantity: number | null;
   calories: number | null;
@@ -13,6 +14,7 @@ interface ComponentEntry {
 }
 
 interface MealEntry {
+  id: string | null;
   time: string;
   components: ComponentEntry[];
 }
@@ -46,13 +48,13 @@ function parseQty(s: string): number | null {
 }
 
 function ghostComponent(): ComponentEntry {
-  return { name: "", quantity: null, calories: null, caloriesPerUnit: null, mealComponentId: null };
+  return { id: null, name: "", quantity: null, calories: null, caloriesPerUnit: null, mealComponentId: null };
 }
 
 function ghostMeal(afterTime?: string): MealEntry {
   const now = nowHHMM();
   const time = afterTime === now ? nextMinute(afterTime) : now;
-  return { time, components: [ghostComponent()] };
+  return { id: null, time, components: [ghostComponent()] };
 }
 
 function isMealEmpty(meal: MealEntry): boolean {
@@ -84,10 +86,11 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
     getDiaryEntry(toDateKey(date)).then((entry) => {
       setWeightStr(entry?.weight != null ? String(entry.weight) : "");
       const loaded = (entry?.meals ?? []).map((m) => ({
+        id: m.id ?? null,
         time: m.time,
         components:
           m.components && m.components.length > 0
-            ? [...m.components.map((c) => ({ name: c.name, quantity: typeof c.quantity === "string" ? parseQty(c.quantity) : c.quantity, calories: c.calories ?? null, caloriesPerUnit: null, mealComponentId: c.mealComponentId ?? null })), ghostComponent()]
+            ? [...m.components.map((c) => ({ id: c.id ?? null, name: c.name, quantity: typeof c.quantity === "string" ? parseQty(c.quantity) : c.quantity, calories: c.calories ?? null, caloriesPerUnit: null, mealComponentId: c.mealComponentId ?? null })), ghostComponent()]
             : [ghostComponent()],
       }));
       const last = loaded[loaded.length - 1];
@@ -252,8 +255,11 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
     const mealsToSave = meals
       .filter((m) => !isMealEmpty(m))
       .map((m) => ({
+        id: m.id ?? undefined,
         time: m.time,
-        components: m.components.filter((c) => c.name.trim() !== "" || c.quantity != null),
+        components: m.components
+          .filter((c) => c.name.trim() !== "" || c.quantity != null)
+          .map((c) => ({ ...c, id: c.id ?? undefined })),
       }))
       .sort((a, b) => a.time.localeCompare(b.time));
     await saveDiaryEntry(toDateKey(date), { weight, meals: mealsToSave });
