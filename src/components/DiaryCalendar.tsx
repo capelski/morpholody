@@ -4,7 +4,7 @@ import MonthSelector from "./MonthSelector";
 import { getDayDataForMonth } from "../storage";
 import "./DiaryCalendar.css";
 
-const DAYS_OF_WEEK = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const DAYS_OF_WEEK = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
@@ -15,7 +15,7 @@ function getDaysInMonth(year: number, month: number): number {
 }
 
 function getFirstDayOfMonth(year: number, month: number): number {
-  return new Date(year, month, 1).getDay();
+  return (new Date(year, month, 1).getDay() + 6) % 7;
 }
 
 interface DiaryCalendarProps {
