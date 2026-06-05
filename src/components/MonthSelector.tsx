@@ -1,9 +1,5 @@
 import "./MonthSelector.css";
-
-const MONTHS = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
-];
+import { MONTHS } from "../constants/months";
 
 interface MonthSelectorProps {
   viewYear: number;

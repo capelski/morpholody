@@ -3,12 +3,9 @@ import Day from "./Day";
 import MonthSelector from "./MonthSelector";
 import { getDayDataForMonth } from "../storage";
 import "./DiaryCalendar.css";
+import { MONTHS } from "../constants/months";
 
 const DAYS_OF_WEEK = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-const MONTHS = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
-];
 
 function getDaysInMonth(year: number, month: number): number {
   return new Date(year, month + 1, 0).getDate();
