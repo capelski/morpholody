@@ -1,13 +1,6 @@
 import { openDB, DIARY_STORE, MEAL_COMPONENTS_STORE } from "../db";
-import { type DiaryEntry } from "./diaryRepository";
-
-export interface StoredMealComponent {
-  id: string;
-  name: string;
-  nameLower: string;
-  caloriesPerUnit: number;
-  units?: string;
-}
+import { type DiaryEntry } from "../types/DiaryEntry";
+import { type StoredMealComponent } from "../types/StoredMealComponent";
 
 /** Fetch meal component suggestions matching the given prefix (case-insensitive, up to 10). */
 export async function getMealComponentSuggestions(

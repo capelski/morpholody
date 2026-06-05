@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { getAllMealComponents, saveMealComponent, type StoredMealComponent } from "../storage";
+import { getAllMealComponents, saveMealComponent } from "../storage";
 import SaveMealComponentDialog from "./SaveMealComponentDialog";
 import "./Components.css";
+import { type StoredMealComponent } from "../types/StoredMealComponent";
 
 const PAGE_SIZE = 20;
 

@@ -1,21 +1,6 @@
 import { openDB, DIARY_STORE } from "../db";
-
-export interface MealComponent {
-  id: string;
-  name: string;
-  quantity: number | null;
-  calories: number | null;
-  mealComponentId?: string | null;
-}
-
-export interface DiaryEntry {
-  id: string;
-  date: string; // YYYY-MM-DD
-  /** Kept for backward compatibility with older entries; always null for new saves. */
-  calories: number | null;
-  weight: number | null;
-  meals: Array<{ id: string; time: string; calories: number | null; components: MealComponent[] }>;
-}
+import { type MealComponent } from "../types/MealComponent";
+import { type DiaryEntry } from "../types/DiaryEntry";
 
 /** Convert a Date object to a YYYY-MM-DD string suitable for use as a diary key. */
 export function toDateKey(date: Date): string {

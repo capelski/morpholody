@@ -1,9 +1,10 @@
 import { useState } from "react";
-import NavBar, { type View } from "./components/NavBar";
+import NavBar from "./components/NavBar";
 import Diary from "./components/Diary";
 import Evolution from "./components/Evolution";
 import Components from "./components/Components";
 import "./App.css";
+import { type View } from "./types/View";
 
 export default function App() {
   const [view, setView] = useState<View>("diary");

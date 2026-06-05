@@ -1,6 +1,6 @@
 import "./NavBar.css";
+import { type View } from "../types/View";
 
-export type View = "diary" | "evolution" | "components";
 
 interface NavBarProps {
   active: View;
