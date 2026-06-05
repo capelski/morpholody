@@ -32,9 +32,11 @@ interface TooltipPayload {
 function CustomTooltip({
   active,
   payload,
+  shiftCalories,
 }: {
   active?: boolean;
   payload?: TooltipPayload[];
+  shiftCalories?: boolean;
 }) {
   if (!active || !payload?.length) return null;
   if (payload.every((p) => p.value == null)) return null;
@@ -49,6 +51,13 @@ function CustomTooltip({
     year: "numeric",
   });
 
+  const prevDate = new Date(parseInt(y), parseInt(m) - 1, parseInt(d) - 1);
+  const prevLabel = prevDate.toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+
   const weightEntry = payload.find((p) => p.dataKey === "weight");
   const calEntry = payload.find((p) => p.dataKey === "calories");
 
@@ -59,7 +68,12 @@ function CustomTooltip({
         <p className="chart-tooltip-weight">{weightEntry.value} kg</p>
       )}
       {calEntry?.value != null && (
-        <p className="chart-tooltip-calories">{calEntry.value} kcal</p>
+        <p className="chart-tooltip-calories">
+          {calEntry.value} kcal
+          {shiftCalories && (
+            <span className="chart-tooltip-cal-note"> ({prevLabel})</span>
+          )}
+        </p>
       )}
     </div>
   );
@@ -75,6 +89,7 @@ export default function Evolution({ viewYear, viewMonth, onMonthChange }: Evolut
   const month = viewMonth + 1; // storage uses 1-indexed months
 
   const [data, setData] = useState<ChartPoint[]>([]);
+  const [shiftCalories, setShiftCalories] = useState(false);
 
   useEffect(() => {
     getDiaryEntriesForMonth(viewYear, month).then((entries) => {
@@ -96,14 +111,21 @@ export default function Evolution({ viewYear, viewMonth, onMonthChange }: Evolut
     });
   }, [viewYear, month]);
 
-  const weights = data
+  const chartData = shiftCalories
+    ? data.map((point, i) => ({
+        ...point,
+        calories: i > 0 ? data[i - 1].calories : null,
+      }))
+    : data;
+
+  const weights = chartData
     .map((d) => d.weight)
     .filter((w): w is number => w !== null);
   const hasWeight = weights.length > 0;
   const minWeight = hasWeight ? Math.floor(Math.min(...weights) - 1) : 0;
   const maxWeight = hasWeight ? Math.ceil(Math.max(...weights) + 1) : 100;
 
-  const caloriesValues = data
+  const caloriesValues = chartData
     .map((d) => d.calories)
     .filter((c): c is number => c !== null);
   const hasCalories = caloriesValues.length > 0;
@@ -123,10 +145,18 @@ export default function Evolution({ viewYear, viewMonth, onMonthChange }: Evolut
           {weights.length} {weights.length === 1 ? "entry" : "entries"}
         </span>
       </div>
+      <label className="evolution-shift-toggle">
+        <input
+          type="checkbox"
+          checked={shiftCalories}
+          onChange={(e) => setShiftCalories(e.target.checked)}
+        />
+        Calories from previous day
+      </label>
       <div className="evolution-chart">
         <ResponsiveContainer width="100%" height={220}>
           <LineChart
-            data={data}
+            data={chartData}
             margin={{ top: 8, right: hasCalories ? 0 : 12, bottom: 0, left: 0 }}
           >
             <CartesianGrid
@@ -163,7 +193,7 @@ export default function Evolution({ viewYear, viewMonth, onMonthChange }: Evolut
                 width={44}
               />
             )}
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip content={(props: any) => <CustomTooltip {...props} shiftCalories={shiftCalories} />} />
             <Line
               yAxisId="weight"
               type="monotone"

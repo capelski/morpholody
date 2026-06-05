@@ -21,6 +21,22 @@
   font-weight: 500;
 }
 
+.evolution-shift-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  color: #718096;
+  margin-bottom: 0.75rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.evolution-shift-toggle input[type="checkbox"] {
+  cursor: pointer;
+  accent-color: #dd6b20;
+}
+
 .evolution-chart {
   margin: 0 -0.5rem;
 }
@@ -56,4 +72,10 @@
   font-weight: 600;
   color: #fbd38d;
   margin-top: 0.1rem;
+}
+
+.chart-tooltip-cal-note {
+  font-size: 0.7rem;
+  font-weight: 400;
+  color: #a0aec0;
 }
