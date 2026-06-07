@@ -3,5 +3,5 @@ export interface MealComponent {
   name: string;
   quantity: number | null;
   calories: number | null;
-  mealComponentId?: string | null;
+  ingredientId?: string | null;
 }

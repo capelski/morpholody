@@ -10,7 +10,7 @@ interface ComponentEntry {
   calories: number | null;
   caloriesPerUnit: number | null;
   units?: string;
-  mealComponentId: string | null;
+  ingredientId: string | null;
 }
 
 interface MealEntry {
@@ -48,7 +48,7 @@ function parseQty(s: string): number | null {
 }
 
 function ghostComponent(): ComponentEntry {
-  return { id: null, name: "", quantity: null, calories: null, caloriesPerUnit: null, mealComponentId: null };
+  return { id: null, name: "", quantity: null, calories: null, caloriesPerUnit: null, ingredientId: null };
 }
 
 function ghostMeal(afterTime?: string): MealEntry {
@@ -95,11 +95,11 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
                   ...(await Promise.all(
                     m.components.map(async (c) => {
                       let caloriesPerUnit: number | null = null;
-                      if (c.mealComponentId) {
-                        const mc = await getMealComponentById(c.mealComponentId);
+                      if (c.ingredientId) {
+                        const mc = await getMealComponentById(c.ingredientId);
                         caloriesPerUnit = mc?.caloriesPerUnit ?? null;
                       }
-                      return { id: c.id ?? null, name: c.name, quantity: c.quantity, calories: c.calories ?? null, caloriesPerUnit, mealComponentId: c.mealComponentId ?? null };
+                      return { id: c.id ?? null, name: c.name, quantity: c.quantity, calories: c.calories ?? null, caloriesPerUnit, ingredientId: c.ingredientId ?? null };
                     })
                   )),
                   ghostComponent(),
@@ -201,7 +201,7 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
       caloriesPerUnit: suggestion.caloriesPerUnit,
       calories,
       units: suggestion.units,
-      mealComponentId: suggestion.id,
+      ingredientId: suggestion.id,
     });
     setNameSuggestions(null);
   }
@@ -212,11 +212,11 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
   }
 
   async function handleSaveMealComponent(name: string, caloriesPerUnit: number, units: string) {
-    const mealComponentId = await saveMealComponent(name, caloriesPerUnit, units);
+    const ingredientId = await saveMealComponent(name, caloriesPerUnit, units);
     if (savingComponent) {
       const qty = meals[savingComponent.mi].components[savingComponent.ci].quantity;
       const calories = qty != null ? Math.round(caloriesPerUnit * qty) : null;
-      updateComponent(savingComponent.mi, savingComponent.ci, { caloriesPerUnit, calories, mealComponentId });
+      updateComponent(savingComponent.mi, savingComponent.ci, { caloriesPerUnit, calories, ingredientId });
     }
     setSavingComponent(null);
   }
@@ -275,8 +275,8 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
           .filter((c) => c.name.trim() !== "" || c.quantity != null)
           .map((c) => {
               const id = c.id ?? crypto.randomUUID();
-              if (c.mealComponentId) {
-                return { id, name: c.name, calories: c.calories, quantity: c.quantity, mealComponentId: c.mealComponentId, ...(c.units ? { units: c.units } : {}) };
+              if (c.ingredientId) {
+                return { id, name: c.name, calories: c.calories, quantity: c.quantity, ingredientId: c.ingredientId, ...(c.units ? { units: c.units } : {}) };
               }
               return { id, name: c.name, calories: c.calories, quantity: c.quantity };
             }),
@@ -454,7 +454,7 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
                                   {comp.name}
                                 </span>
                               )}
-                              {comp.mealComponentId != null && (
+                              {comp.ingredientId != null && (
                                 <span className="day-component-linked" title="Saved component" aria-label="Saved component">🥣</span>
                               )}
                               {editingMeals && nameSuggestions?.mi === mi && nameSuggestions?.ci === ci && (
@@ -483,7 +483,7 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
                                 </ul>
                               )}
                             </div>
-                            {comp.mealComponentId != null && (editingMeals ? (
+                            {comp.ingredientId != null && (editingMeals ? (
                               <input
                                 type="number"
                                 className="day-meal-field day-component-field--qty"
@@ -507,7 +507,7 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
                                 min="1"
                                 step="1"
                                 value={comp.calories != null ? String(comp.calories) : ""}
-                                readOnly={comp.mealComponentId != null}
+                                readOnly={comp.ingredientId != null}
                                 onChange={(e) =>
                                   updateComponent(mi, ci, { calories: parseCal(e.target.value) })
                                 }

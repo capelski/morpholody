@@ -95,7 +95,7 @@ export async function saveMealComponent(name: string, caloriesPerUnit: number, u
 /** Update all diary entries that contain components linked to the given meal component id. */
 async function propagateMealComponentUpdate(
   db: IDBDatabase,
-  mealComponentId: string,
+  ingredientId: string,
   name: string,
   caloriesPerUnit: number,
 ): Promise<void> {
@@ -110,7 +110,7 @@ async function propagateMealComponentUpdate(
       let changed = false;
       for (const meal of entry.meals) {
         for (const comp of (meal.components ?? [])) {
-          if (comp.mealComponentId === mealComponentId) {
+          if (comp.ingredientId === ingredientId) {
             comp.name = name;
             if (comp.quantity != null) {
               comp.calories = Math.round(caloriesPerUnit * comp.quantity);
