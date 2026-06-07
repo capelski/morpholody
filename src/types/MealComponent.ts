@@ -1,7 +1,12 @@
-export interface MealComponent {
-  id: string;
-  name: string;
-  quantity: number | null;
+import { Ingredient } from "./Ingredient";
+
+export type MealComponent = {
   calories: number | null;
-  ingredientId?: string | null;
-}
+  id: string;
+} & ({
+  ingredientId?: null;
+  name: string;
+} | Pick<Ingredient, "caloriesPerUnit" | "name" | "units"> & {
+  quantity: number | null;
+  ingredientId: string;
+});

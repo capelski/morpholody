@@ -99,7 +99,7 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
                         const mc = await getMealComponentById(c.ingredientId);
                         caloriesPerUnit = mc?.caloriesPerUnit ?? null;
                       }
-                      return { id: c.id ?? null, name: c.name, quantity: c.quantity, calories: c.calories ?? null, caloriesPerUnit, ingredientId: c.ingredientId ?? null };
+                      return { id: c.id ?? null, name: c.name, quantity: c.ingredientId ? c.quantity : null, calories: c.calories ?? null, caloriesPerUnit, ingredientId: c.ingredientId ?? null };
                     })
                   )),
                   ghostComponent(),
@@ -276,7 +276,7 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
           .map((c) => {
               const id = c.id ?? crypto.randomUUID();
               if (c.ingredientId) {
-                return { id, name: c.name, calories: c.calories, quantity: c.quantity, ingredientId: c.ingredientId, ...(c.units ? { units: c.units } : {}) };
+                return { id, name: c.name, calories: c.calories, quantity: c.quantity, ingredientId: c.ingredientId, caloriesPerUnit: c.caloriesPerUnit ?? 0, ...(c.units ? { units: c.units } : {}) };
               }
               return { id, name: c.name, calories: c.calories, quantity: c.quantity };
             }),
