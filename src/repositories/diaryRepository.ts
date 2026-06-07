@@ -77,22 +77,15 @@ export function cursorDiary(store: IDBObjectStore, range?: IDBKeyRange): Promise
   });
 }
 
-/** Return all diary entries for the given month (1-indexed). */
 export async function getDiaryEntriesForMonth(year: number, month: number): Promise<DiaryEntry[]> {
   const db = await openDB();
-  const m = String(month).padStart(2, '0');
-  const range = IDBKeyRange.bound(`${year}-${m}-01`, `${year}-${m}-31`);
+  const parsedMonth = String(month).padStart(2, '0');
+  const range = IDBKeyRange.bound(`${year}-${parsedMonth}-01`, `${year}-${parsedMonth}-31`);
   return cursorDiary(db.transaction(DIARY_STORE, 'readonly').objectStore(DIARY_STORE), range);
 }
 
 export async function getMonthEntries(year: number, month: number): Promise<DiaryEntryMap> {
-  const db = await openDB();
-  const parsedMonth = String(month).padStart(2, '0');
-  const range = IDBKeyRange.bound(`${year}-${parsedMonth}-01`, `${year}-${parsedMonth}-31`);
-  const entries = await cursorDiary(
-    db.transaction(DIARY_STORE, 'readonly').objectStore(DIARY_STORE),
-    range,
-  );
+  const entries = await getDiaryEntriesForMonth(year, month);
 
   const map = new Map<number, DiaryEntry>();
   for (const entry of entries) {
