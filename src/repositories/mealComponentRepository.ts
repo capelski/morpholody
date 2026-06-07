@@ -1,6 +1,6 @@
-import { openDB, DIARY_STORE, MEAL_COMPONENTS_STORE } from "../db";
+import { openDB, DIARY_STORE, INGREDIENTS_STORE } from "../db";
 import { type DiaryEntry } from "../types/DiaryEntry";
-import { type StoredMealComponent } from "../types/StoredMealComponent";
+import { type Ingredient } from "../types/Ingredient";
 
 /** Fetch meal component suggestions matching the given prefix (case-insensitive, up to 10). */
 export async function getMealComponentSuggestions(
@@ -10,8 +10,8 @@ export async function getMealComponentSuggestions(
   return new Promise((resolve, reject) => {
     const lower = query.toLowerCase();
     const req = db
-      .transaction(MEAL_COMPONENTS_STORE, "readonly")
-      .objectStore(MEAL_COMPONENTS_STORE)
+      .transaction(INGREDIENTS_STORE, "readonly")
+      .objectStore(INGREDIENTS_STORE)
       .getAll();
     req.onsuccess = () => {
       const all = (req.result as { id?: string; name: string; nameLower?: string; caloriesPerUnit?: number; units?: string }[]);
@@ -36,25 +36,25 @@ export async function getMealComponentSuggestions(
 }
 
 /** Return a meal component by its ID, or undefined if not found. */
-export async function getMealComponentById(id: string): Promise<StoredMealComponent | undefined> {
+export async function getMealComponentById(id: string): Promise<Ingredient | undefined> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
-    const req = db.transaction(MEAL_COMPONENTS_STORE, "readonly").objectStore(MEAL_COMPONENTS_STORE).get(id);
-    req.onsuccess = () => resolve(req.result as StoredMealComponent | undefined);
+    const req = db.transaction(INGREDIENTS_STORE, "readonly").objectStore(INGREDIENTS_STORE).get(id);
+    req.onsuccess = () => resolve(req.result as Ingredient | undefined);
     req.onerror = () => reject(req.error);
   });
 }
 
 /** Return all meal components sorted by name (case-insensitive). */
-export async function getAllMealComponents(): Promise<StoredMealComponent[]> {
+export async function getAllMealComponents(): Promise<Ingredient[]> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const req = db
-      .transaction(MEAL_COMPONENTS_STORE, "readonly")
-      .objectStore(MEAL_COMPONENTS_STORE)
+      .transaction(INGREDIENTS_STORE, "readonly")
+      .objectStore(INGREDIENTS_STORE)
       .index("by_name_lower")
       .getAll();
-    req.onsuccess = () => resolve(req.result as StoredMealComponent[]);
+    req.onsuccess = () => resolve(req.result as Ingredient[]);
     req.onerror = () => reject(req.error);
   });
 }
@@ -67,8 +67,8 @@ export async function saveMealComponent(name: string, caloriesPerUnit: number, u
     // Look up any existing record by name to preserve its id.
     const existing = await new Promise<{ id?: string } | undefined>((res, rej) => {
       const r = db
-        .transaction(MEAL_COMPONENTS_STORE, "readonly")
-        .objectStore(MEAL_COMPONENTS_STORE)
+        .transaction(INGREDIENTS_STORE, "readonly")
+        .objectStore(INGREDIENTS_STORE)
         .index("by_name")
         .get(name);
       r.onsuccess = () => res(r.result as { id?: string } | undefined);
@@ -79,8 +79,8 @@ export async function saveMealComponent(name: string, caloriesPerUnit: number, u
   const doc: Record<string, unknown> = { id: resolvedId, name, nameLower: name.toLowerCase(), caloriesPerUnit };
   if (units && units.trim()) doc.units = units.trim();
   await new Promise<void>((resolve, reject) => {
-    const tx = db.transaction(MEAL_COMPONENTS_STORE, "readwrite");
-    const req = tx.objectStore(MEAL_COMPONENTS_STORE).put(doc);
+    const tx = db.transaction(INGREDIENTS_STORE, "readwrite");
+    const req = tx.objectStore(INGREDIENTS_STORE).put(doc);
     req.onsuccess = () => resolve();
     req.onerror = () => reject(req.error);
   });

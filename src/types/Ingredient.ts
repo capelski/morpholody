@@ -1,4 +1,4 @@
-export interface StoredMealComponent {
+export interface Ingredient {
   id: string;
   name: string;
   nameLower: string;

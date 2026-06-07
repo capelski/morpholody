@@ -99,7 +99,7 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
                         const mc = await getMealComponentById(c.mealComponentId);
                         caloriesPerUnit = mc?.caloriesPerUnit ?? null;
                       }
-                      return { id: c.id ?? null, name: c.name, quantity: typeof c.quantity === "string" ? parseQty(c.quantity) : c.quantity, calories: c.calories ?? null, caloriesPerUnit, mealComponentId: c.mealComponentId ?? null };
+                      return { id: c.id ?? null, name: c.name, quantity: c.quantity, calories: c.calories ?? null, caloriesPerUnit, mealComponentId: c.mealComponentId ?? null };
                     })
                   )),
                   ghostComponent(),
@@ -273,7 +273,13 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
         time: m.time,
         components: m.components
           .filter((c) => c.name.trim() !== "" || c.quantity != null)
-          .map((c) => ({ ...c, id: c.id ?? crypto.randomUUID() })),
+          .map((c) => {
+              const id = c.id ?? crypto.randomUUID();
+              if (c.mealComponentId) {
+                return { id, name: c.name, calories: c.calories, quantity: c.quantity, mealComponentId: c.mealComponentId, ...(c.units ? { units: c.units } : {}) };
+              }
+              return { id, name: c.name, calories: c.calories, quantity: c.quantity };
+            }),
       }))
       .sort((a, b) => a.time.localeCompare(b.time));
     await saveDiaryEntry(toDateKey(date), { weight, meals: mealsToSave });

@@ -1,7 +1,9 @@
 const DB_NAME = "morpholody";
-const DB_VERSION = 8;
+const DB_VERSION = 9;
 export const DIARY_STORE = "diary";
-export const MEAL_COMPONENTS_STORE = "mealComponents";
+export const INGREDIENTS_STORE = "ingredients";
+
+const LEGACY_MEAL_COMPONENTS_STORE = "mealComponents";
 
 let dbPromise: Promise<IDBDatabase> | null = null;
 
@@ -17,9 +19,9 @@ export function openDB(): Promise<IDBDatabase> {
         if (e.oldVersion === 0) {
           // Fresh install — create all stores directly, no migration needed.
           db.createObjectStore(DIARY_STORE, { keyPath: "date" });
-          const mcStore = db.createObjectStore(MEAL_COMPONENTS_STORE, { keyPath: "id" });
-          mcStore.createIndex("by_name_lower", "nameLower");
-          mcStore.createIndex("by_name", "name");
+          const ingStore = db.createObjectStore(INGREDIENTS_STORE, { keyPath: "id" });
+          ingStore.createIndex("by_name_lower", "nameLower");
+          ingStore.createIndex("by_name", "name");
           return;
         }
 
@@ -55,9 +57,9 @@ export function openDB(): Promise<IDBDatabase> {
                 }
                 db.deleteObjectStore("weights");
                 if (e.oldVersion >= 2) db.deleteObjectStore("meals");
-                const mcStore = db.createObjectStore(MEAL_COMPONENTS_STORE, { keyPath: "id" });
-                mcStore.createIndex("by_name_lower", "nameLower");
-                mcStore.createIndex("by_name", "name");
+                const ingStore = db.createObjectStore(INGREDIENTS_STORE, { keyPath: "id" });
+                ingStore.createIndex("by_name_lower", "nameLower");
+                ingStore.createIndex("by_name", "name");
               };
 
               if (e.oldVersion >= 2) {
@@ -92,7 +94,7 @@ export function openDB(): Promise<IDBDatabase> {
 
         if (e.oldVersion === 3) {
           // v3 → v7: add mealComponents store keyed by id.
-          const mcStore = db.createObjectStore(MEAL_COMPONENTS_STORE, { keyPath: "id" });
+          const mcStore = db.createObjectStore(LEGACY_MEAL_COMPONENTS_STORE, { keyPath: "id" });
           mcStore.createIndex("by_name_lower", "nameLower");
           mcStore.createIndex("by_name", "name");
           return;
@@ -101,7 +103,7 @@ export function openDB(): Promise<IDBDatabase> {
         if (e.oldVersion === 4) {
           // v4 → v7: add nameLower index, back-fill, then recreate store keyed by id.
           // Fall through to the v5/v6 → v7 block below by not returning.
-          const oldStore = tx.objectStore(MEAL_COMPONENTS_STORE);
+          const oldStore = tx.objectStore(LEGACY_MEAL_COMPONENTS_STORE);
           if (!oldStore.indexNames.contains("by_name_lower")) {
             oldStore.createIndex("by_name_lower", "nameLower");
           }
@@ -110,12 +112,12 @@ export function openDB(): Promise<IDBDatabase> {
         // v4/v5/v6 → v7: recreate mealComponents store keyed by id instead of name.
         // Back-fills nameLower and id on any records that predate those fields.
         if (e.oldVersion < 7) {
-          const oldStore = tx.objectStore(MEAL_COMPONENTS_STORE);
+          const oldStore = tx.objectStore(LEGACY_MEAL_COMPONENTS_STORE);
           const allRecsReq = oldStore.getAll();
           allRecsReq.onsuccess = () => {
             const recs = allRecsReq.result as Array<Record<string, unknown>>;
-            db.deleteObjectStore(MEAL_COMPONENTS_STORE);
-            const newStore = db.createObjectStore(MEAL_COMPONENTS_STORE, { keyPath: "id" });
+            db.deleteObjectStore(LEGACY_MEAL_COMPONENTS_STORE);
+            const newStore = db.createObjectStore(LEGACY_MEAL_COMPONENTS_STORE, { keyPath: "id" });
             newStore.createIndex("by_name_lower", "nameLower");
             newStore.createIndex("by_name", "name");
             for (const rec of recs) {
@@ -148,6 +150,20 @@ export function openDB(): Promise<IDBDatabase> {
             cursor.continue();
           };
           cursorReq.onerror = () => reject(cursorReq.error);
+        }
+
+        // v8 → v9: rename mealComponents store to ingredients.
+        if (e.oldVersion >= 7 && e.oldVersion < 9) {
+          const allRecsReq = tx.objectStore(LEGACY_MEAL_COMPONENTS_STORE).getAll();
+          allRecsReq.onsuccess = () => {
+            const recs = allRecsReq.result as Array<Record<string, unknown>>;
+            db.deleteObjectStore(LEGACY_MEAL_COMPONENTS_STORE);
+            const ingStore = db.createObjectStore(INGREDIENTS_STORE, { keyPath: "id" });
+            ingStore.createIndex("by_name_lower", "nameLower");
+            ingStore.createIndex("by_name", "name");
+            for (const rec of recs) ingStore.put(rec);
+          };
+          allRecsReq.onerror = () => reject(allRecsReq.error);
         }
       };
 

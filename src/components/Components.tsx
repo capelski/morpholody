@@ -2,15 +2,15 @@ import { useEffect, useState } from "react";
 import { getAllMealComponents, saveMealComponent } from "../storage";
 import SaveMealComponentDialog from "./SaveMealComponentDialog";
 import "./Components.css";
-import { type StoredMealComponent } from "../types/StoredMealComponent";
+import { type Ingredient } from "../types/Ingredient";
 
 const PAGE_SIZE = 20;
 
 export default function Components() {
-  const [all, setAll] = useState<StoredMealComponent[]>([]);
+  const [all, setAll] = useState<Ingredient[]>([]);
   const [filter, setFilter] = useState("");
   const [page, setPage] = useState(0);
-  const [editing, setEditing] = useState<StoredMealComponent | null>(null);
+  const [editing, setEditing] = useState<Ingredient | null>(null);
   const [creating, setCreating] = useState(false);
 
   function reload() {
