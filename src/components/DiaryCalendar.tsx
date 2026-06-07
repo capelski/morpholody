@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
-import Day from "./Day";
-import MonthSelector from "./MonthSelector";
-import { getDayDataForMonth } from "../storage";
-import "./DiaryCalendar.css";
-import { MONTHS } from "../constants/months";
+import { useState, useEffect } from 'react';
+import Day from './Day';
+import MonthSelector from './MonthSelector';
+import { getDayDataForMonth } from '../storage';
+import './DiaryCalendar.css';
+import { MONTHS } from '../constants/months';
 
-const DAYS_OF_WEEK = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const DAYS_OF_WEEK = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 function getDaysInMonth(year: number, month: number): number {
   return new Date(year, month + 1, 0).getDate();
@@ -21,16 +21,12 @@ interface DiaryCalendarProps {
   onMonthChange: (year: number, month: number) => void;
 }
 
-export default function DiaryCalendar({
-  viewYear,
-  viewMonth,
-  onMonthChange,
-}: DiaryCalendarProps) {
+export default function DiaryCalendar({ viewYear, viewMonth, onMonthChange }: DiaryCalendarProps) {
   const today = new Date();
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [dayData, setDayData] = useState<
-    Map<number, { hasWeight: boolean; hasMeals: boolean }>
-  >(new Map());
+  const [dayData, setDayData] = useState<Map<number, { hasWeight: boolean; hasMeals: boolean }>>(
+    new Map(),
+  );
   const daysInMonth = getDaysInMonth(viewYear, viewMonth);
   const firstDay = getFirstDayOfMonth(viewYear, viewMonth);
 
@@ -58,9 +54,7 @@ export default function DiaryCalendar({
 
   function isToday(day: number) {
     return (
-      day === today.getDate() &&
-      viewMonth === today.getMonth() &&
-      viewYear === today.getFullYear()
+      day === today.getDate() && viewMonth === today.getMonth() && viewYear === today.getFullYear()
     );
   }
 
@@ -75,13 +69,13 @@ export default function DiaryCalendar({
 
   function dotClass(day: number): string {
     const info = dayData.get(day);
-    if (!info) return "";
+    if (!info) return '';
     const { hasWeight, hasMeals } = info;
-    if (hasWeight && hasMeals) return "has-both";
-    if (hasMeals) return "has-meals-only";
+    if (hasWeight && hasMeals) return 'has-both';
+    if (hasMeals) return 'has-meals-only';
     // Blue dot suppressed for today (weight-only).
-    if (hasWeight && !isToday(day)) return "has-weight-only";
-    return "";
+    if (hasWeight && !isToday(day)) return 'has-weight-only';
+    return '';
   }
 
   const cells: (number | null)[] = [
@@ -93,11 +87,7 @@ export default function DiaryCalendar({
   return (
     <>
       <div className="diary-calendar">
-        <MonthSelector
-          viewYear={viewYear}
-          viewMonth={viewMonth}
-          onMonthChange={onMonthChange}
-        />
+        <MonthSelector viewYear={viewYear} viewMonth={viewMonth} onMonthChange={onMonthChange} />
 
         <div className="diary-calendar-weekdays">
           {DAYS_OF_WEEK.map((d) => (
@@ -112,24 +102,20 @@ export default function DiaryCalendar({
             <button
               key={idx}
               className={[
-                "day-cell",
-                day === null ? "empty" : "",
-                day !== null && isToday(day) ? "today" : "",
-                day !== null && isSelected(day) ? "selected" : "",
-                day !== null ? dotClass(day) : "",
+                'day-cell',
+                day === null ? 'empty' : '',
+                day !== null && isToday(day) ? 'today' : '',
+                day !== null && isSelected(day) ? 'selected' : '',
+                day !== null ? dotClass(day) : '',
               ]
                 .filter(Boolean)
-                .join(" ")}
+                .join(' ')}
               onClick={day !== null ? () => handleDayClick(day) : undefined}
               disabled={day === null}
-              aria-label={
-                day !== null
-                  ? `${MONTHS[viewMonth]} ${day}, ${viewYear}`
-                  : undefined
-              }
+              aria-label={day !== null ? `${MONTHS[viewMonth]} ${day}, ${viewYear}` : undefined}
               aria-pressed={day !== null ? isSelected(day) : undefined}
             >
-              {day ?? ""}
+              {day ?? ''}
             </button>
           ))}
         </div>

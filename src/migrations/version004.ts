@@ -6,8 +6,8 @@ export function applyVersion4(
 ): boolean {
   if (e.oldVersion !== 3) return false;
 
-  const mcStore = db.createObjectStore("mealComponents", { keyPath: "id" });
-  mcStore.createIndex("by_name_lower", "nameLower");
-  mcStore.createIndex("by_name", "name");
+  const mcStore = db.createObjectStore('mealComponents', { keyPath: 'id' });
+  mcStore.createIndex('by_name_lower', 'nameLower');
+  mcStore.createIndex('by_name', 'name');
   return true;
 }

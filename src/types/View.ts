@@ -1,1 +1,1 @@
-export type View = "diary" | "evolution" | "components";
+export type View = 'diary' | 'evolution' | 'components';

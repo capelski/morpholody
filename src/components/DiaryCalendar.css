@@ -74,7 +74,7 @@
 .day-cell.has-weight-only::before,
 .day-cell.has-meals-only::before,
 .day-cell.has-both::before {
-  content: "";
+  content: '';
   position: absolute;
   bottom: 5px;
   left: calc(50% - 3px);

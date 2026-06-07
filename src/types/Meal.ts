@@ -1,4 +1,4 @@
-import { type MealComponent } from "./MealComponent";
+import { type MealComponent } from './MealComponent';
 
 export interface Meal {
   id: string;

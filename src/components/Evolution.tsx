@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import MonthSelector from "./MonthSelector";
+import { useEffect, useState } from 'react';
+import MonthSelector from './MonthSelector';
 import {
   LineChart,
   Line,
@@ -9,12 +9,12 @@ import {
   Tooltip,
   ResponsiveContainer,
   Dot,
-} from "recharts";
-import { getDiaryEntriesForMonth } from "../storage";
-import "./Evolution.css";
+} from 'recharts';
+import { getDiaryEntriesForMonth } from '../storage';
+import './Evolution.css';
 
-const WEIGHT_COLOR = "#3182ce";
-const CAL_COLOR = "#dd6b20";
+const WEIGHT_COLOR = '#3182ce';
+const CAL_COLOR = '#dd6b20';
 
 interface ChartPoint {
   dateKey: string;
@@ -42,37 +42,33 @@ function CustomTooltip({
   if (payload.every((p) => p.value == null)) return null;
 
   const point = payload[0].payload;
-  const [y, m, d] = point.dateKey.split("-");
+  const [y, m, d] = point.dateKey.split('-');
   const date = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
-  const label = date.toLocaleDateString("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    year: "numeric",
+  const label = date.toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
   });
 
   const prevDate = new Date(parseInt(y), parseInt(m) - 1, parseInt(d) - 1);
-  const prevLabel = prevDate.toLocaleDateString("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
+  const prevLabel = prevDate.toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
   });
 
-  const weightEntry = payload.find((p) => p.dataKey === "weight");
-  const calEntry = payload.find((p) => p.dataKey === "calories");
+  const weightEntry = payload.find((p) => p.dataKey === 'weight');
+  const calEntry = payload.find((p) => p.dataKey === 'calories');
 
   return (
     <div className="chart-tooltip">
       <p className="chart-tooltip-date">{label}</p>
-      {weightEntry?.value != null && (
-        <p className="chart-tooltip-weight">{weightEntry.value} kg</p>
-      )}
+      {weightEntry?.value != null && <p className="chart-tooltip-weight">{weightEntry.value} kg</p>}
       {calEntry?.value != null && (
         <p className="chart-tooltip-calories">
           {calEntry.value} kcal
-          {shiftCalories && (
-            <span className="chart-tooltip-cal-note"> ({prevLabel})</span>
-          )}
+          {shiftCalories && <span className="chart-tooltip-cal-note"> ({prevLabel})</span>}
         </p>
       )}
     </div>
@@ -85,11 +81,7 @@ interface EvolutionProps {
   onMonthChange: (year: number, month: number) => void;
 }
 
-export default function Evolution({
-  viewYear,
-  viewMonth,
-  onMonthChange,
-}: EvolutionProps) {
+export default function Evolution({ viewYear, viewMonth, onMonthChange }: EvolutionProps) {
   const month = viewMonth + 1; // storage uses 1-indexed months
 
   const [data, setData] = useState<ChartPoint[]>([]);
@@ -103,7 +95,7 @@ export default function Evolution({
       setData(
         Array.from({ length: daysInMonth }, (_, i) => {
           const day = i + 1;
-          const dk = `${viewYear}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+          const dk = `${viewYear}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
           return {
             dateKey: dk,
             label: String(day),
@@ -122,35 +114,23 @@ export default function Evolution({
       }))
     : data;
 
-  const weights = chartData
-    .map((d) => d.weight)
-    .filter((w): w is number => w !== null);
+  const weights = chartData.map((d) => d.weight).filter((w): w is number => w !== null);
   const hasWeight = weights.length > 0;
   const minWeight = hasWeight ? Math.floor(Math.min(...weights) - 1) : 0;
   const maxWeight = hasWeight ? Math.ceil(Math.max(...weights) + 1) : 100;
 
-  const caloriesValues = chartData
-    .map((d) => d.calories)
-    .filter((c): c is number => c !== null);
+  const caloriesValues = chartData.map((d) => d.calories).filter((c): c is number => c !== null);
   const hasCalories = caloriesValues.length > 0;
-  const minCal = hasCalories
-    ? Math.max(0, Math.floor(Math.min(...caloriesValues) - 100))
-    : 0;
-  const maxCal = hasCalories
-    ? Math.ceil(Math.max(...caloriesValues) + 100)
-    : 3000;
+  const minCal = hasCalories ? Math.max(0, Math.floor(Math.min(...caloriesValues) - 100)) : 0;
+  const maxCal = hasCalories ? Math.ceil(Math.max(...caloriesValues) + 100) : 3000;
 
   return (
     <div className="evolution">
-      <MonthSelector
-        viewYear={viewYear}
-        viewMonth={viewMonth}
-        onMonthChange={onMonthChange}
-      />
+      <MonthSelector viewYear={viewYear} viewMonth={viewMonth} onMonthChange={onMonthChange} />
       <div className="evolution-header">
         <h2 className="evolution-title">Weight evolution</h2>
         <span className="evolution-count">
-          {weights.length} {weights.length === 1 ? "entry" : "entries"}
+          {weights.length} {weights.length === 1 ? 'entry' : 'entries'}
         </span>
       </div>
       <label className="evolution-shift-toggle">
@@ -167,14 +147,10 @@ export default function Evolution({
             data={chartData}
             margin={{ top: 8, right: hasCalories ? 0 : 12, bottom: 0, left: 0 }}
           >
-            <CartesianGrid
-              strokeDasharray="3 3"
-              stroke="#e2e8f0"
-              vertical={false}
-            />
+            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
             <XAxis
               dataKey="label"
-              tick={{ fontSize: 10, fill: "#a0aec0" }}
+              tick={{ fontSize: 10, fill: '#a0aec0' }}
               axisLine={false}
               tickLine={false}
               interval="preserveStartEnd"
@@ -183,7 +159,7 @@ export default function Evolution({
               yAxisId="weight"
               orientation="left"
               domain={[minWeight, maxWeight]}
-              tick={{ fontSize: 11, fill: "#a0aec0" }}
+              tick={{ fontSize: 11, fill: '#a0aec0' }}
               axisLine={false}
               tickLine={false}
               tickFormatter={(v) => `${v}`}
@@ -202,9 +178,7 @@ export default function Evolution({
               />
             )}
             <Tooltip
-              content={(props: any) => (
-                <CustomTooltip {...props} shiftCalories={shiftCalories} />
-              )}
+              content={(props: any) => <CustomTooltip {...props} shiftCalories={shiftCalories} />}
             />
             <Line
               yAxisId="weight"
@@ -286,9 +260,7 @@ export default function Evolution({
             )}
           </LineChart>
         </ResponsiveContainer>
-        {!hasWeight && (
-          <p className="evolution-no-data">No entries for this month</p>
-        )}
+        {!hasWeight && <p className="evolution-no-data">No entries for this month</p>}
       </div>
     </div>
   );

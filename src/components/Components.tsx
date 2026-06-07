@@ -1,14 +1,14 @@
-import { useEffect, useState } from "react";
-import { getAllMealComponents, saveMealComponent } from "../storage";
-import SaveMealComponentDialog from "./SaveMealComponentDialog";
-import "./Components.css";
-import { type Ingredient } from "../types/Ingredient";
+import { useEffect, useState } from 'react';
+import { getAllMealComponents, saveMealComponent } from '../storage';
+import SaveMealComponentDialog from './SaveMealComponentDialog';
+import './Components.css';
+import { type Ingredient } from '../types/Ingredient';
 
 const PAGE_SIZE = 20;
 
 export default function Components() {
   const [all, setAll] = useState<Ingredient[]>([]);
-  const [filter, setFilter] = useState("");
+  const [filter, setFilter] = useState('');
   const [page, setPage] = useState(0);
   const [editing, setEditing] = useState<Ingredient | null>(null);
   const [creating, setCreating] = useState(false);
@@ -28,13 +28,7 @@ export default function Components() {
     id?: string,
     propagate?: boolean,
   ) {
-    await saveMealComponent(
-      name,
-      caloriesPerUnit,
-      units,
-      id,
-      propagate ?? true,
-    );
+    await saveMealComponent(name, caloriesPerUnit, units, id, propagate ?? true);
     setEditing(null);
     setCreating(false);
     reload();
@@ -46,10 +40,7 @@ export default function Components() {
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const clampedPage = Math.min(page, totalPages - 1);
-  const pageItems = filtered.slice(
-    clampedPage * PAGE_SIZE,
-    (clampedPage + 1) * PAGE_SIZE,
-  );
+  const pageItems = filtered.slice(clampedPage * PAGE_SIZE, (clampedPage + 1) * PAGE_SIZE);
 
   function handleFilterChange(value: string) {
     setFilter(value);
@@ -66,10 +57,7 @@ export default function Components() {
           value={filter}
           onChange={(e) => handleFilterChange(e.target.value)}
         />
-        <button
-          className="components-new-btn"
-          onClick={() => setCreating(true)}
-        >
+        <button className="components-new-btn" onClick={() => setCreating(true)}>
           + New
         </button>
       </div>
@@ -92,7 +80,7 @@ export default function Components() {
                 <tr key={c.name}>
                   <td>{c.name}</td>
                   <td className="components-cell-num">{c.caloriesPerUnit}</td>
-                  <td>{c.units ?? "—"}</td>
+                  <td>{c.units ?? '—'}</td>
                   <td className="components-cell-action">
                     <button
                       className="components-edit-btn"

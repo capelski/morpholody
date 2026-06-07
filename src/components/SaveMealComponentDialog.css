@@ -127,7 +127,7 @@
   gap: 0.5rem;
 }
 
-.mcd-field-checkbox input[type="checkbox"] {
+.mcd-field-checkbox input[type='checkbox'] {
   width: 1rem;
   height: 1rem;
   flex-shrink: 0;

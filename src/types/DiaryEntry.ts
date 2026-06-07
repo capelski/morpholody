@@ -1,4 +1,4 @@
-import { type Meal } from "./Meal";
+import { type Meal } from './Meal';
 
 export interface DiaryEntry {
   id: string;

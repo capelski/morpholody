@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import "./SaveMealComponentDialog.css";
+import { useEffect, useRef, useState } from 'react';
+import './SaveMealComponentDialog.css';
 
 interface SaveMealComponentDialogProps {
   initialName: string;
@@ -22,15 +22,15 @@ export default function SaveMealComponentDialog({
   initialCaloriesPerUnit,
   initialUnits,
   id,
-  title = "New meal component",
+  title = 'New meal component',
   onSave,
   onCancel,
 }: SaveMealComponentDialogProps) {
   const [name, setName] = useState(initialName);
   const [calStr, setCalStr] = useState(
-    initialCaloriesPerUnit != null ? String(initialCaloriesPerUnit) : "",
+    initialCaloriesPerUnit != null ? String(initialCaloriesPerUnit) : '',
   );
-  const [units, setUnits] = useState(initialUnits ?? "");
+  const [units, setUnits] = useState(initialUnits ?? '');
   const [propagate, setPropagate] = useState(true);
   const calRef = useRef<HTMLInputElement>(null);
 
@@ -40,10 +40,10 @@ export default function SaveMealComponentDialog({
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onCancel();
+      if (e.key === 'Escape') onCancel();
     }
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
   }, [onCancel]);
 
   function handleSubmit(e: React.FormEvent) {
@@ -53,7 +53,7 @@ export default function SaveMealComponentDialog({
     onSave(name.trim(), cal, units, id, propagate);
   }
 
-  const valid = name.trim() !== "" && parseFloat(calStr) > 0;
+  const valid = name.trim() !== '' && parseFloat(calStr) > 0;
 
   return (
     <div className="mcd-overlay" onPointerDown={onCancel}>

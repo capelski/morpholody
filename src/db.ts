@@ -1,13 +1,13 @@
-import { applyVersion3 } from "./migrations/version003";
-import { applyVersion4 } from "./migrations/version004";
-import { applyVersion7 } from "./migrations/version007";
-import { applyVersion8 } from "./migrations/version008";
-import { applyVersion9 } from "./migrations/version009";
+import { applyVersion3 } from './migrations/version003';
+import { applyVersion4 } from './migrations/version004';
+import { applyVersion7 } from './migrations/version007';
+import { applyVersion8 } from './migrations/version008';
+import { applyVersion9 } from './migrations/version009';
 
-const DB_NAME = "morpholody";
+const DB_NAME = 'morpholody';
 const DB_VERSION = 9;
-export const DIARY_STORE = "diary";
-export const INGREDIENTS_STORE = "ingredients";
+export const DIARY_STORE = 'diary';
+export const INGREDIENTS_STORE = 'ingredients';
 
 let dbPromise: Promise<IDBDatabase> | null = null;
 
@@ -21,12 +21,12 @@ export function openDB(): Promise<IDBDatabase> {
         const tx = req.transaction!;
 
         if (e.oldVersion === 0) {
-          db.createObjectStore(DIARY_STORE, { keyPath: "date" });
+          db.createObjectStore(DIARY_STORE, { keyPath: 'date' });
           const ingStore = db.createObjectStore(INGREDIENTS_STORE, {
-            keyPath: "id",
+            keyPath: 'id',
           });
-          ingStore.createIndex("by_name_lower", "nameLower");
-          ingStore.createIndex("by_name", "name");
+          ingStore.createIndex('by_name_lower', 'nameLower');
+          ingStore.createIndex('by_name', 'name');
           return;
         }
 

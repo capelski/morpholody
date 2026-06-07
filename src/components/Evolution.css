@@ -32,7 +32,7 @@
   user-select: none;
 }
 
-.evolution-shift-toggle input[type="checkbox"] {
+.evolution-shift-toggle input[type='checkbox'] {
   cursor: pointer;
   accent-color: #dd6b20;
 }

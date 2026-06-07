@@ -6,7 +6,7 @@ export function applyVersion8(
 ): boolean {
   if (e.oldVersion >= 8) return false;
 
-  const cursorReq = tx.objectStore("diary").openCursor();
+  const cursorReq = tx.objectStore('diary').openCursor();
   cursorReq.onsuccess = () => {
     const cursor = cursorReq.result;
     if (!cursor) return;
@@ -14,9 +14,7 @@ export function applyVersion8(
     if (!entry.id) entry.id = crypto.randomUUID();
     for (const meal of (entry.meals ?? []) as Array<Record<string, unknown>>) {
       if (!meal.id) meal.id = crypto.randomUUID();
-      for (const comp of (meal.components ?? []) as Array<
-        Record<string, unknown>
-      >) {
+      for (const comp of (meal.components ?? []) as Array<Record<string, unknown>>) {
         if (!comp.id) comp.id = crypto.randomUUID();
       }
     }

@@ -6,7 +6,7 @@ export function applyVersion3(
 ): boolean {
   if (e.oldVersion >= 3) return false;
 
-  const diaryStore = db.createObjectStore("diary", { keyPath: "date" });
+  const diaryStore = db.createObjectStore('diary', { keyPath: 'date' });
   const diary = new Map<
     string,
     {
@@ -16,7 +16,7 @@ export function applyVersion3(
     }
   >();
 
-  const weightReq = tx.objectStore("weights").openCursor();
+  const weightReq = tx.objectStore('weights').openCursor();
   weightReq.onsuccess = () => {
     const cursor = weightReq.result;
     if (cursor) {
@@ -29,15 +29,15 @@ export function applyVersion3(
           entry.meals.sort((a, b) => a.time.localeCompare(b.time));
           diaryStore.put(entry);
         }
-        db.deleteObjectStore("weights");
-        if (e.oldVersion >= 2) db.deleteObjectStore("meals");
-        const ingStore = db.createObjectStore("ingredients", { keyPath: "id" });
-        ingStore.createIndex("by_name_lower", "nameLower");
-        ingStore.createIndex("by_name", "name");
+        db.deleteObjectStore('weights');
+        if (e.oldVersion >= 2) db.deleteObjectStore('meals');
+        const ingStore = db.createObjectStore('ingredients', { keyPath: 'id' });
+        ingStore.createIndex('by_name_lower', 'nameLower');
+        ingStore.createIndex('by_name', 'name');
       };
 
       if (e.oldVersion >= 2) {
-        const mealReq = tx.objectStore("meals").openCursor();
+        const mealReq = tx.objectStore('meals').openCursor();
         mealReq.onsuccess = () => {
           const cursor = mealReq.result;
           if (cursor) {
@@ -50,8 +50,7 @@ export function applyVersion3(
               time: string;
               description: string;
             };
-            if (!diary.has(dk))
-              diary.set(dk, { date: dk, weight: null, meals: [] });
+            if (!diary.has(dk)) diary.set(dk, { date: dk, weight: null, meals: [] });
             diary.get(dk)!.meals.push({ time, description });
             cursor.continue();
           } else {
