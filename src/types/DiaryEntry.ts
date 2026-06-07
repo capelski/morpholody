@@ -7,3 +7,5 @@ export interface DiaryEntry {
   weight: number | null;
   meals: Meal[];
 }
+
+export type DiaryEntryMap = Map<number, DiaryEntry>;

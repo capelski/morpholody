@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { MONTHS } from '../constants/months';
-import { getDayDataForMonth } from '../storage';
+import { getDayIndicatorClass } from '../logic/diaryEntry';
+import { DiaryEntryMap, getMonthEntries } from '../storage';
 import Day from './Day';
 import './DiaryCalendar.css';
 import MonthSelector from './MonthSelector';
@@ -24,14 +25,12 @@ interface DiaryCalendarProps {
 export default function DiaryCalendar({ viewYear, viewMonth, onMonthChange }: DiaryCalendarProps) {
   const today = new Date();
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [dayData, setDayData] = useState<Map<number, { hasWeight: boolean; hasMeals: boolean }>>(
-    new Map(),
-  );
+  const [monthEntries, setMonthEntries] = useState<DiaryEntryMap>(new Map());
   const daysInMonth = getDaysInMonth(viewYear, viewMonth);
   const firstDay = getFirstDayOfMonth(viewYear, viewMonth);
 
   useEffect(() => {
-    getDayDataForMonth(viewYear, viewMonth + 1).then(setDayData);
+    getMonthEntries(viewYear, viewMonth + 1).then(setMonthEntries);
   }, [viewYear, viewMonth]);
 
   useEffect(() => {
@@ -67,16 +66,6 @@ export default function DiaryCalendar({ viewYear, viewMonth, onMonthChange }: Di
     );
   }
 
-  function dotClass(day: number): string {
-    const info = dayData.get(day);
-    if (!info) return '';
-    const { hasWeight, hasMeals } = info;
-    if (hasWeight && hasMeals) return 'has-both';
-    if (hasMeals) return 'has-meals-only';
-    if (hasWeight) return 'has-weight-only';
-    return '';
-  }
-
   const cells: (number | null)[] = [
     ...Array(firstDay).fill(null),
     ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
@@ -105,7 +94,7 @@ export default function DiaryCalendar({ viewYear, viewMonth, onMonthChange }: Di
                 day === null ? 'empty' : '',
                 day !== null && isToday(day) ? 'today' : '',
                 day !== null && isSelected(day) ? 'selected' : '',
-                day !== null ? dotClass(day) : '',
+                day !== null ? getDayIndicatorClass(monthEntries.get(day)) : '',
               ]
                 .filter(Boolean)
                 .join(' ')}
@@ -125,7 +114,7 @@ export default function DiaryCalendar({ viewYear, viewMonth, onMonthChange }: Di
           date={selectedDate}
           onClose={() => setSelectedDate(null)}
           onSaved={() => {
-            getDayDataForMonth(viewYear, viewMonth + 1).then(setDayData);
+            getMonthEntries(viewYear, viewMonth + 1).then(setMonthEntries);
           }}
           onDateChange={(d) => setSelectedDate(d)}
         />

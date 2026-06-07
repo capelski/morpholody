@@ -1,7 +1,7 @@
-import { openDB, DIARY_STORE } from '../db';
-import { type MealComponent } from '../types/MealComponent';
+import { DIARY_STORE, openDB } from '../db';
+import { DiaryEntryMap, type DiaryEntry } from '../types/DiaryEntry';
 import { type Meal } from '../types/Meal';
-import { type DiaryEntry } from '../types/DiaryEntry';
+import { type MealComponent } from '../types/MealComponent';
 
 /** Fetch the diary entry for a given date key (YYYY-MM-DD). Returns null if none exists yet. */
 export async function getDiaryEntry(date: string): Promise<DiaryEntry | null> {
@@ -85,19 +85,20 @@ export async function getDiaryEntriesForMonth(year: number, month: number): Prom
   return cursorDiary(db.transaction(DIARY_STORE, 'readonly').objectStore(DIARY_STORE), range);
 }
 
-/** Return a map from day-of-month to the kinds of data recorded for that day. */
-export async function getDayDataForMonth(
-  year: number,
-  month: number,
-): Promise<Map<number, { hasWeight: boolean; hasMeals: boolean }>> {
-  const entries = await getDiaryEntriesForMonth(year, month);
-  const map = new Map<number, { hasWeight: boolean; hasMeals: boolean }>();
+export async function getMonthEntries(year: number, month: number): Promise<DiaryEntryMap> {
+  const db = await openDB();
+  const parsedMonth = String(month).padStart(2, '0');
+  const range = IDBKeyRange.bound(`${year}-${parsedMonth}-01`, `${year}-${parsedMonth}-31`);
+  const entries = await cursorDiary(
+    db.transaction(DIARY_STORE, 'readonly').objectStore(DIARY_STORE),
+    range,
+  );
+
+  const map = new Map<number, DiaryEntry>();
   for (const entry of entries) {
     const day = parseInt(entry.date.split('-')[2], 10);
-    map.set(day, {
-      hasWeight: entry.weight != null,
-      hasMeals: entry.meals.length > 0,
-    });
+    map.set(day, entry);
   }
+
   return map;
 }
