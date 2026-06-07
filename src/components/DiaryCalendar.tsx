@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
-import Day from './Day';
-import MonthSelector from './MonthSelector';
-import { getDayDataForMonth } from '../storage';
-import './DiaryCalendar.css';
+import { useEffect, useState } from 'react';
 import { MONTHS } from '../constants/months';
+import { getDayDataForMonth } from '../storage';
+import Day from './Day';
+import './DiaryCalendar.css';
+import MonthSelector from './MonthSelector';
 
 const DAYS_OF_WEEK = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -73,8 +73,7 @@ export default function DiaryCalendar({ viewYear, viewMonth, onMonthChange }: Di
     const { hasWeight, hasMeals } = info;
     if (hasWeight && hasMeals) return 'has-both';
     if (hasMeals) return 'has-meals-only';
-    // Blue dot suppressed for today (weight-only).
-    if (hasWeight && !isToday(day)) return 'has-weight-only';
+    if (hasWeight) return 'has-weight-only';
     return '';
   }
 
