@@ -3,14 +3,6 @@ import { type MealComponent } from "../types/MealComponent";
 import { type Meal } from "../types/Meal";
 import { type DiaryEntry } from "../types/DiaryEntry";
 
-/** Convert a Date object to a YYYY-MM-DD string suitable for use as a diary key. */
-export function toDateKey(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
-
 /** Fetch the diary entry for a given date key (YYYY-MM-DD). Returns null if none exists yet. */
 export async function getDiaryEntry(date: string): Promise<DiaryEntry | null> {
   const db = await openDB();

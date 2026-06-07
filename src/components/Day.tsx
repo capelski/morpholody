@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { toDateKey, getDiaryEntry, saveDiaryEntry, getMealComponentSuggestions, saveMealComponent, getMealComponentById } from "../storage";
+import { getDiaryEntry, saveDiaryEntry, getMealComponentSuggestions, saveMealComponent, getMealComponentById } from "../storage";
 import SaveMealComponentDialog from "./SaveMealComponentDialog";
 import "./Day.css";
+import { toDateKey } from "../logic/date";
 
 interface ComponentEntry {
   id: string | null;
