@@ -1,5 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { getDiaryEntry, saveDiaryEntry, getMealComponentSuggestions, saveMealComponent, getMealComponentById } from "../storage";
+import {
+  getDiaryEntry,
+  saveDiaryEntry,
+  getMealComponentSuggestions,
+  saveMealComponent,
+  getMealComponentById,
+} from "../storage";
 import SaveMealComponentDialog from "./SaveMealComponentDialog";
 import "./Day.css";
 import { toDateKey } from "../logic/date";
@@ -49,7 +55,14 @@ function parseQty(s: string): number | null {
 }
 
 function ghostComponent(): ComponentEntry {
-  return { id: null, name: "", quantity: null, calories: null, caloriesPerUnit: null, ingredientId: null };
+  return {
+    id: null,
+    name: "",
+    quantity: null,
+    calories: null,
+    caloriesPerUnit: null,
+    ingredientId: null,
+  };
 }
 
 function ghostMeal(afterTime?: string): MealEntry {
@@ -59,17 +72,29 @@ function ghostMeal(afterTime?: string): MealEntry {
 }
 
 function isMealEmpty(meal: MealEntry): boolean {
-  return meal.components.every((c) => c.name.trim() === "" && c.quantity == null);
+  return meal.components.every(
+    (c) => c.name.trim() === "" && c.quantity == null,
+  );
 }
 
-export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) {
+export default function Day({
+  date,
+  onClose,
+  onSaved,
+  onDateChange,
+}: DayProps) {
   const [weightStr, setWeightStr] = useState("");
   const [meals, setMeals] = useState<MealEntry[]>([ghostMeal()]);
   const [editingMeals, setEditingMeals] = useState(false);
   const [nameSuggestions, setNameSuggestions] = useState<{
     mi: number;
     ci: number;
-    items: { id: string; name: string; caloriesPerUnit: number; units?: string }[];
+    items: {
+      id: string;
+      name: string;
+      caloriesPerUnit: number;
+      units?: string;
+    }[];
     active: number;
     hasExactMatch: boolean;
   } | null>(null);
@@ -100,13 +125,20 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
                         const mc = await getMealComponentById(c.ingredientId);
                         caloriesPerUnit = mc?.caloriesPerUnit ?? null;
                       }
-                      return { id: c.id ?? null, name: c.name, quantity: c.ingredientId ? c.quantity : null, calories: c.calories ?? null, caloriesPerUnit, ingredientId: c.ingredientId ?? null };
-                    })
+                      return {
+                        id: c.id ?? null,
+                        name: c.name,
+                        quantity: c.ingredientId ? c.quantity : null,
+                        calories: c.calories ?? null,
+                        caloriesPerUnit,
+                        ingredientId: c.ingredientId ?? null,
+                      };
+                    }),
                   )),
                   ghostComponent(),
                 ]
               : [ghostComponent()],
-        }))
+        })),
       );
       const last = loadedMeals[loadedMeals.length - 1];
       setMeals([...loadedMeals, ghostMeal(last?.time)]);
@@ -126,7 +158,9 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
   }, [onClose]);
 
   function updateMealTime(mealIndex: number, time: string) {
-    setMeals((prev) => prev.map((m, i) => (i === mealIndex ? { ...m, time } : m)));
+    setMeals((prev) =>
+      prev.map((m, i) => (i === mealIndex ? { ...m, time } : m)),
+    );
   }
 
   function updateComponent(
@@ -171,7 +205,10 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
       prev.map((meal, mi) => {
         if (mi !== mealIndex) return meal;
         const filtered = meal.components.filter((_, ci) => ci !== compIndex);
-        return { ...meal, components: filtered.length > 0 ? filtered : [ghostComponent()] };
+        return {
+          ...meal,
+          components: filtered.length > 0 ? filtered : [ghostComponent()],
+        };
       }),
     );
   }
@@ -185,18 +222,26 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
     const trimmed = value.trim();
     if (trimmed.length > 0) {
       const items = await getMealComponentSuggestions(trimmed);
-      const hasExactMatch = items.some((item) => item.name.toLowerCase() === trimmed.toLowerCase());
+      const hasExactMatch = items.some(
+        (item) => item.name.toLowerCase() === trimmed.toLowerCase(),
+      );
       setNameSuggestions({ mi, ci, items, active: -1, hasExactMatch });
     } else {
       setNameSuggestions(null);
     }
   }
 
-  function selectSuggestion(suggestion: { id: string; name: string; caloriesPerUnit: number; units?: string }) {
+  function selectSuggestion(suggestion: {
+    id: string;
+    name: string;
+    caloriesPerUnit: number;
+    units?: string;
+  }) {
     if (!nameSuggestions) return;
     const { mi, ci } = nameSuggestions;
     const qty = meals[mi].components[ci].quantity;
-    const calories = qty != null ? Math.round(suggestion.caloriesPerUnit * qty) : null;
+    const calories =
+      qty != null ? Math.round(suggestion.caloriesPerUnit * qty) : null;
     updateComponent(mi, ci, {
       name: suggestion.name,
       caloriesPerUnit: suggestion.caloriesPerUnit,
@@ -212,12 +257,21 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
     setSavingComponent({ name, mi, ci });
   }
 
-  async function handleSaveMealComponent(name: string, caloriesPerUnit: number, units: string) {
+  async function handleSaveMealComponent(
+    name: string,
+    caloriesPerUnit: number,
+    units: string,
+  ) {
     const ingredientId = await saveMealComponent(name, caloriesPerUnit, units);
     if (savingComponent) {
-      const qty = meals[savingComponent.mi].components[savingComponent.ci].quantity;
+      const qty =
+        meals[savingComponent.mi].components[savingComponent.ci].quantity;
       const calories = qty != null ? Math.round(caloriesPerUnit * qty) : null;
-      updateComponent(savingComponent.mi, savingComponent.ci, { caloriesPerUnit, calories, ingredientId });
+      updateComponent(savingComponent.mi, savingComponent.ci, {
+        caloriesPerUnit,
+        calories,
+        ingredientId,
+      });
     }
     setSavingComponent(null);
   }
@@ -234,8 +288,13 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
 
   function handleNameKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (!nameSuggestions) return;
-    const addIdx = nameSuggestions.hasExactMatch ? -1 : nameSuggestions.items.length;
-    const lastIdx = nameSuggestions.items.length - 1 + (nameSuggestions.hasExactMatch ? 0 : 1);
+    const addIdx = nameSuggestions.hasExactMatch
+      ? -1
+      : nameSuggestions.items.length;
+    const lastIdx =
+      nameSuggestions.items.length -
+      1 +
+      (nameSuggestions.hasExactMatch ? 0 : 1);
     if (e.key === "ArrowDown") {
       e.preventDefault();
       setNameSuggestions((prev) =>
@@ -249,8 +308,10 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
     } else if (e.key === "Enter" && nameSuggestions.active >= 0) {
       e.preventDefault();
       if (nameSuggestions.active === addIdx) {
-        const name = meals[nameSuggestions.mi].components[nameSuggestions.ci].name.trim();
-        if (name) saveAndSelectNew(name, nameSuggestions.mi, nameSuggestions.ci);
+        const name =
+          meals[nameSuggestions.mi].components[nameSuggestions.ci].name.trim();
+        if (name)
+          saveAndSelectNew(name, nameSuggestions.mi, nameSuggestions.ci);
       } else {
         selectSuggestion(nameSuggestions.items[nameSuggestions.active]);
       }
@@ -275,12 +336,25 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
         components: m.components
           .filter((c) => c.name.trim() !== "" || c.quantity != null)
           .map((c) => {
-              const id = c.id ?? crypto.randomUUID();
-              if (c.ingredientId) {
-                return { id, name: c.name, calories: c.calories, quantity: c.quantity, ingredientId: c.ingredientId, caloriesPerUnit: c.caloriesPerUnit ?? 0, ...(c.units ? { units: c.units } : {}) };
-              }
-              return { id, name: c.name, calories: c.calories, quantity: c.quantity };
-            }),
+            const id = c.id ?? crypto.randomUUID();
+            if (c.ingredientId) {
+              return {
+                id,
+                name: c.name,
+                calories: c.calories,
+                quantity: c.quantity,
+                ingredientId: c.ingredientId,
+                caloriesPerUnit: c.caloriesPerUnit ?? 0,
+                ...(c.units ? { units: c.units } : {}),
+              };
+            }
+            return {
+              id,
+              name: c.name,
+              calories: c.calories,
+              quantity: c.quantity,
+            };
+          }),
       }))
       .sort((a, b) => a.time.localeCompare(b.time));
     await saveDiaryEntry(toDateKey(date), { weight, meals: mealsToSave });
@@ -311,256 +385,336 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
 
   return (
     <>
-    <div className="day-overlay" onPointerDown={onClose}>
-      <div
-        className="day-panel"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="day-panel-title"
-        onPointerDown={(e) => e.stopPropagation()}
-      >
-        <div className="day-panel-header">
-          {onDateChange && (
+      <div className="day-overlay" onPointerDown={onClose}>
+        <div
+          className="day-panel"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="day-panel-title"
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          <div className="day-panel-header">
+            {onDateChange && (
+              <button
+                className="day-panel-nav"
+                onClick={() => {
+                  const d = new Date(date);
+                  d.setDate(d.getDate() - 1);
+                  onDateChange(d);
+                }}
+                aria-label="Previous day"
+              >
+                &#8249;
+              </button>
+            )}
+            <h2 className="day-panel-title" id="day-panel-title">
+              {label}
+            </h2>
+            {onDateChange && (
+              <button
+                className="day-panel-nav"
+                onClick={() => {
+                  const d = new Date(date);
+                  d.setDate(d.getDate() + 1);
+                  onDateChange(d);
+                }}
+                aria-label="Next day"
+              >
+                &#8250;
+              </button>
+            )}
             <button
-              className="day-panel-nav"
-              onClick={() => { const d = new Date(date); d.setDate(d.getDate() - 1); onDateChange(d); }}
-              aria-label="Previous day"
+              className="day-panel-close"
+              onClick={onClose}
+              aria-label="Close"
             >
-              &#8249;
+              &#10005;
             </button>
-          )}
-          <h2 className="day-panel-title" id="day-panel-title">
-            {label}
-          </h2>
-          {onDateChange && (
-            <button
-              className="day-panel-nav"
-              onClick={() => { const d = new Date(date); d.setDate(d.getDate() + 1); onDateChange(d); }}
-              aria-label="Next day"
-            >
-              &#8250;
-            </button>
-          )}
-          <button
-            className="day-panel-close"
-            onClick={onClose}
-            aria-label="Close"
-          >
-            &#10005;
-          </button>
-        </div>
-
-        <form className="day-body" onSubmit={handleSave}>
-          <div className="day-field">
-            <label className="day-field-label" htmlFor="day-weight">
-              Weight
-            </label>
-            <div className="day-input-row">
-              <input
-                ref={weightRef}
-                id="day-weight"
-                type="number"
-                className="day-input"
-                placeholder="0.0"
-                min="0"
-                step="0.1"
-                value={weightStr}
-                onChange={(e) => setWeightStr(e.target.value)}
-              />
-              <span className="day-input-unit">kg</span>
-            </div>
           </div>
 
-          <div className="day-field">
-            <div className="day-meals-label-row">
-              <span className="day-field-label">Meals</span>
-              <div className="day-meals-label-right">
-                {dayCalories != null && (
-                  <span className="day-field-label day-day-total">{dayCalories} kcal</span>
-                )}
-                <button
-                  type="button"
-                  className={`day-meals-edit-btn${editingMeals ? " day-meals-edit-btn--active" : ""}`}
-                  onClick={() => setEditingMeals((v) => !v)}
-                  aria-label={editingMeals ? "Stop editing meals" : "Edit meals"}
-                >
-                  ✏️
-                </button>
+          <form className="day-body" onSubmit={handleSave}>
+            <div className="day-field">
+              <label className="day-field-label" htmlFor="day-weight">
+                Weight
+              </label>
+              <div className="day-input-row">
+                <input
+                  ref={weightRef}
+                  id="day-weight"
+                  type="number"
+                  className="day-input"
+                  placeholder="0.0"
+                  min="0"
+                  step="0.1"
+                  value={weightStr}
+                  onChange={(e) => setWeightStr(e.target.value)}
+                />
+                <span className="day-input-unit">kg</span>
               </div>
             </div>
 
-            <ul className="day-meals">
-              {meals.map((meal, mi) => {
-                const isGhostMeal = mi === meals.length - 1;
-                if (isGhostMeal && !editingMeals) return null;
-                return (
-                  <li
-                    key={mi}
-                    className={`day-meal-card${isGhostMeal ? " day-meal-card--ghost" : ""}`}
+            <div className="day-field">
+              <div className="day-meals-label-row">
+                <span className="day-field-label">Meals</span>
+                <div className="day-meals-label-right">
+                  {dayCalories != null && (
+                    <span className="day-field-label day-day-total">
+                      {dayCalories} kcal
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    className={`day-meals-edit-btn${editingMeals ? " day-meals-edit-btn--active" : ""}`}
+                    onClick={() => setEditingMeals((v) => !v)}
+                    aria-label={
+                      editingMeals ? "Stop editing meals" : "Edit meals"
+                    }
                   >
-                    <div className="day-meal-header">
-                      <input
-                        type="time"
-                        className="day-meal-field day-meal-field--time"
-                        value={meal.time}
-                        onChange={(e) => editingMeals && updateMealTime(mi, e.target.value)}
-                        readOnly={!editingMeals}
-                        aria-label="Meal time"
-                      />
-                      {!isGhostMeal && (() => {
-                        const total = meal.components.reduce<number | null>((s, c) => {
-                          if (c.calories == null) return s;
-                          return (s ?? 0) + c.calories;
-                        }, null);
-                        return total != null ? (
-                          <span className="day-meal-total">{total} kcal</span>
-                        ) : null;
-                      })()}
-                      {!isGhostMeal && editingMeals && (
-                        <button
-                          type="button"
-                          className="day-meal-delete"
-                          onClick={() => removeMeal(mi)}
-                          aria-label={`Remove meal at ${meal.time}`}
-                        >
-                          &#10005;
-                        </button>
-                      )}
-                    </div>
+                    ✏️
+                  </button>
+                </div>
+              </div>
 
-                    <ul className="day-components">
-                      {meal.components.map((comp, ci) => {
-                        const isGhostComp = ci === meal.components.length - 1;
-                        if (isGhostComp && !editingMeals) return null;
-                        return (
-                          <li key={ci} className="day-component-row">
-                            <div className="day-component-name-wrapper">
+              <ul className="day-meals">
+                {meals.map((meal, mi) => {
+                  const isGhostMeal = mi === meals.length - 1;
+                  if (isGhostMeal && !editingMeals) return null;
+                  return (
+                    <li
+                      key={mi}
+                      className={`day-meal-card${isGhostMeal ? " day-meal-card--ghost" : ""}`}
+                    >
+                      <div className="day-meal-header">
+                        <input
+                          type="time"
+                          className="day-meal-field day-meal-field--time"
+                          value={meal.time}
+                          onChange={(e) =>
+                            editingMeals && updateMealTime(mi, e.target.value)
+                          }
+                          readOnly={!editingMeals}
+                          aria-label="Meal time"
+                        />
+                        {!isGhostMeal &&
+                          (() => {
+                            const total = meal.components.reduce<number | null>(
+                              (s, c) => {
+                                if (c.calories == null) return s;
+                                return (s ?? 0) + c.calories;
+                              },
+                              null,
+                            );
+                            return total != null ? (
+                              <span className="day-meal-total">
+                                {total} kcal
+                              </span>
+                            ) : null;
+                          })()}
+                        {!isGhostMeal && editingMeals && (
+                          <button
+                            type="button"
+                            className="day-meal-delete"
+                            onClick={() => removeMeal(mi)}
+                            aria-label={`Remove meal at ${meal.time}`}
+                          >
+                            &#10005;
+                          </button>
+                        )}
+                      </div>
+
+                      <ul className="day-components">
+                        {meal.components.map((comp, ci) => {
+                          const isGhostComp = ci === meal.components.length - 1;
+                          if (isGhostComp && !editingMeals) return null;
+                          return (
+                            <li key={ci} className="day-component-row">
+                              <div className="day-component-name-wrapper">
+                                {editingMeals ? (
+                                  <input
+                                    type="text"
+                                    className="day-meal-field day-component-field--name"
+                                    placeholder={isGhostComp ? "Component" : ""}
+                                    value={comp.name}
+                                    onChange={(e) =>
+                                      handleNameChange(mi, ci, e.target.value)
+                                    }
+                                    onKeyDown={handleNameKeyDown}
+                                    onBlur={handleNameBlur}
+                                    aria-label="Component name"
+                                    aria-autocomplete="list"
+                                    aria-expanded={
+                                      nameSuggestions?.mi === mi &&
+                                      nameSuggestions?.ci === ci
+                                    }
+                                  />
+                                ) : (
+                                  <span className="day-meal-field day-meal-field--read day-component-field--name">
+                                    {comp.name}
+                                  </span>
+                                )}
+                                {comp.ingredientId != null && (
+                                  <span
+                                    className="day-component-linked"
+                                    title="Saved component"
+                                    aria-label="Saved component"
+                                  >
+                                    🥣
+                                  </span>
+                                )}
+                                {editingMeals &&
+                                  nameSuggestions?.mi === mi &&
+                                  nameSuggestions?.ci === ci && (
+                                    <ul
+                                      className="day-component-suggestions"
+                                      role="listbox"
+                                    >
+                                      {nameSuggestions.items.map(
+                                        (item, idx) => (
+                                          <li
+                                            key={item.name}
+                                            role="option"
+                                            aria-selected={
+                                              idx === nameSuggestions.active
+                                            }
+                                            className={`day-component-suggestion${idx === nameSuggestions.active ? " day-component-suggestion--active" : ""}`}
+                                            onMouseDown={() =>
+                                              selectSuggestion(item)
+                                            }
+                                          >
+                                            {item.name}
+                                          </li>
+                                        ),
+                                      )}
+                                      {!nameSuggestions.hasExactMatch && (
+                                        <li
+                                          role="option"
+                                          aria-selected={
+                                            nameSuggestions.active ===
+                                            nameSuggestions.items.length
+                                          }
+                                          className={`day-component-suggestion day-component-suggestion--save${nameSuggestions.active === nameSuggestions.items.length ? " day-component-suggestion--active" : ""}`}
+                                          onMouseDown={() =>
+                                            saveAndSelectNew(
+                                              comp.name.trim(),
+                                              mi,
+                                              ci,
+                                            )
+                                          }
+                                        >
+                                          Save "{comp.name.trim()}"
+                                        </li>
+                                      )}
+                                    </ul>
+                                  )}
+                              </div>
+                              {comp.ingredientId != null &&
+                                (editingMeals ? (
+                                  <input
+                                    type="number"
+                                    className="day-meal-field day-component-field--qty"
+                                    placeholder={comp.units ?? "Qty"}
+                                    min="0"
+                                    step="any"
+                                    value={
+                                      comp.quantity != null
+                                        ? String(comp.quantity)
+                                        : ""
+                                    }
+                                    onChange={(e) =>
+                                      handleQuantityChange(
+                                        mi,
+                                        ci,
+                                        e.target.value,
+                                      )
+                                    }
+                                    aria-label="Quantity"
+                                  />
+                                ) : (
+                                  <span className="day-meal-field day-meal-field--read day-component-field--qty">
+                                    {comp.quantity != null
+                                      ? String(comp.quantity)
+                                      : ""}
+                                  </span>
+                                ))}
                               {editingMeals ? (
                                 <input
-                                  type="text"
-                                  className="day-meal-field day-component-field--name"
-                                  placeholder={isGhostComp ? "Component" : ""}
-                                  value={comp.name}
-                                  onChange={(e) => handleNameChange(mi, ci, e.target.value)}
-                                  onKeyDown={handleNameKeyDown}
-                                  onBlur={handleNameBlur}
-                                  aria-label="Component name"
-                                  aria-autocomplete="list"
-                                  aria-expanded={
-                                    nameSuggestions?.mi === mi && nameSuggestions?.ci === ci
+                                  type="number"
+                                  className="day-meal-field day-component-field--cal"
+                                  placeholder="kcal"
+                                  min="1"
+                                  step="1"
+                                  value={
+                                    comp.calories != null
+                                      ? String(comp.calories)
+                                      : ""
                                   }
+                                  readOnly={comp.ingredientId != null}
+                                  onChange={(e) =>
+                                    updateComponent(mi, ci, {
+                                      calories: parseCal(e.target.value),
+                                    })
+                                  }
+                                  aria-label="Calories"
                                 />
                               ) : (
-                                <span className="day-meal-field day-meal-field--read day-component-field--name">
-                                  {comp.name}
+                                <span className="day-meal-field day-meal-field--read day-component-field--cal">
+                                  {comp.calories != null
+                                    ? String(comp.calories)
+                                    : ""}
                                 </span>
                               )}
-                              {comp.ingredientId != null && (
-                                <span className="day-component-linked" title="Saved component" aria-label="Saved component">🥣</span>
+                              {!isGhostComp && editingMeals && (
+                                <button
+                                  type="button"
+                                  className="day-meal-delete"
+                                  onClick={() => removeComponent(mi, ci)}
+                                  aria-label={`Remove ${comp.name}`}
+                                >
+                                  &#10005;
+                                </button>
                               )}
-                              {editingMeals && nameSuggestions?.mi === mi && nameSuggestions?.ci === ci && (
-                                <ul className="day-component-suggestions" role="listbox">
-                                  {nameSuggestions.items.map((item, idx) => (
-                                    <li
-                                      key={item.name}
-                                      role="option"
-                                      aria-selected={idx === nameSuggestions.active}
-                                      className={`day-component-suggestion${idx === nameSuggestions.active ? " day-component-suggestion--active" : ""}`}
-                                      onMouseDown={() => selectSuggestion(item)}
-                                    >
-                                      {item.name}
-                                    </li>
-                                  ))}
-                                  {!nameSuggestions.hasExactMatch && (
-                                    <li
-                                      role="option"
-                                      aria-selected={nameSuggestions.active === nameSuggestions.items.length}
-                                      className={`day-component-suggestion day-component-suggestion--save${nameSuggestions.active === nameSuggestions.items.length ? " day-component-suggestion--active" : ""}`}
-                                      onMouseDown={() => saveAndSelectNew(comp.name.trim(), mi, ci)}
-                                    >
-                                      Save "{comp.name.trim()}"
-                                    </li>
-                                  )}
-                                </ul>
-                              )}
-                            </div>
-                            {comp.ingredientId != null && (editingMeals ? (
-                              <input
-                                type="number"
-                                className="day-meal-field day-component-field--qty"
-                                placeholder={comp.units ?? "Qty"}
-                                min="0"
-                                step="any"
-                                value={comp.quantity != null ? String(comp.quantity) : ""}
-                                onChange={(e) => handleQuantityChange(mi, ci, e.target.value)}
-                                aria-label="Quantity"
-                              />
-                            ) : (
-                              <span className="day-meal-field day-meal-field--read day-component-field--qty">
-                                {comp.quantity != null ? String(comp.quantity) : ""}
-                              </span>
-                            ))}
-                            {editingMeals ? (
-                              <input
-                                type="number"
-                                className="day-meal-field day-component-field--cal"
-                                placeholder="kcal"
-                                min="1"
-                                step="1"
-                                value={comp.calories != null ? String(comp.calories) : ""}
-                                readOnly={comp.ingredientId != null}
-                                onChange={(e) =>
-                                  updateComponent(mi, ci, { calories: parseCal(e.target.value) })
-                                }
-                                aria-label="Calories"
-                              />
-                            ) : (
-                              <span className="day-meal-field day-meal-field--read day-component-field--cal">
-                                {comp.calories != null ? String(comp.calories) : ""}
-                              </span>
-                            )}
-                            {!isGhostComp && editingMeals && (
-                              <button
-                                type="button"
-                                className="day-meal-delete"
-                                onClick={() => removeComponent(mi, ci)}
-                                aria-label={`Remove ${comp.name}`}
-                              >
-                                &#10005;
-                              </button>
-                            )}
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </li>
-                );
-              })}
-            </ul>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </li>
+                  );
+                })}
+              </ul>
 
-            {hasDuplicateTimes && (
-              <p className="day-meal-conflict">Two meals share the same time</p>
-            )}
-          </div>
+              {hasDuplicateTimes && (
+                <p className="day-meal-conflict">
+                  Two meals share the same time
+                </p>
+              )}
+            </div>
 
-          <div className="day-actions">
-            <button type="button" className="day-btn-cancel" onClick={onClose}>
-              Cancel
-            </button>
-            <button type="submit" className="day-btn-save" disabled={!canSave}>
-              Save
-            </button>
-          </div>
-        </form>
+            <div className="day-actions">
+              <button
+                type="button"
+                className="day-btn-cancel"
+                onClick={onClose}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="day-btn-save"
+                disabled={!canSave}
+              >
+                Save
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
-    </div>
-    {savingComponent !== null && (
-      <SaveMealComponentDialog
-        initialName={savingComponent.name}
-        onSave={handleSaveMealComponent}
-        onCancel={() => setSavingComponent(null)}
-      />
-    )}
+      {savingComponent !== null && (
+        <SaveMealComponentDialog
+          initialName={savingComponent.name}
+          onSave={handleSaveMealComponent}
+          onCancel={() => setSavingComponent(null)}
+        />
+      )}
     </>
   );
 }

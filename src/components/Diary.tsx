@@ -11,7 +11,11 @@ interface DiaryProps {
   onMonthChange: (year: number, month: number) => void;
 }
 
-export default function Diary({ viewYear, viewMonth, onMonthChange }: DiaryProps) {
+export default function Diary({
+  viewYear,
+  viewMonth,
+  onMonthChange,
+}: DiaryProps) {
   const [tab, setTab] = useState<DiaryTab>("calendar");
 
   return (
@@ -32,9 +36,17 @@ export default function Diary({ viewYear, viewMonth, onMonthChange }: DiaryProps
       </div>
 
       {tab === "calendar" ? (
-        <DiaryCalendar viewYear={viewYear} viewMonth={viewMonth} onMonthChange={onMonthChange} />
+        <DiaryCalendar
+          viewYear={viewYear}
+          viewMonth={viewMonth}
+          onMonthChange={onMonthChange}
+        />
       ) : (
-        <DiaryList viewYear={viewYear} viewMonth={viewMonth} onMonthChange={onMonthChange} />
+        <DiaryList
+          viewYear={viewYear}
+          viewMonth={viewMonth}
+          onMonthChange={onMonthChange}
+        />
       )}
     </div>
   );

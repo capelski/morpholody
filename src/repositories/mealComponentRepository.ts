@@ -5,7 +5,9 @@ import { type Ingredient } from "../types/Ingredient";
 /** Fetch meal component suggestions matching the given prefix (case-insensitive, up to 10). */
 export async function getMealComponentSuggestions(
   query: string,
-): Promise<{ id: string; name: string; caloriesPerUnit: number; units?: string }[]> {
+): Promise<
+  { id: string; name: string; caloriesPerUnit: number; units?: string }[]
+> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const lower = query.toLowerCase();
@@ -14,7 +16,13 @@ export async function getMealComponentSuggestions(
       .objectStore(INGREDIENTS_STORE)
       .getAll();
     req.onsuccess = () => {
-      const all = (req.result as { id?: string; name: string; nameLower?: string; caloriesPerUnit?: number; units?: string }[]);
+      const all = req.result as {
+        id?: string;
+        name: string;
+        nameLower?: string;
+        caloriesPerUnit?: number;
+        units?: string;
+      }[];
       const starts: typeof all = [];
       const contains: typeof all = [];
       for (const r of all) {
@@ -36,10 +44,15 @@ export async function getMealComponentSuggestions(
 }
 
 /** Return a meal component by its ID, or undefined if not found. */
-export async function getMealComponentById(id: string): Promise<Ingredient | undefined> {
+export async function getMealComponentById(
+  id: string,
+): Promise<Ingredient | undefined> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
-    const req = db.transaction(INGREDIENTS_STORE, "readonly").objectStore(INGREDIENTS_STORE).get(id);
+    const req = db
+      .transaction(INGREDIENTS_STORE, "readonly")
+      .objectStore(INGREDIENTS_STORE)
+      .get(id);
     req.onsuccess = () => resolve(req.result as Ingredient | undefined);
     req.onerror = () => reject(req.error);
   });
@@ -60,23 +73,36 @@ export async function getAllMealComponents(): Promise<Ingredient[]> {
 }
 
 /** Upsert a meal component into the mealComponents store. Returns the component's id. */
-export async function saveMealComponent(name: string, caloriesPerUnit: number, units?: string, id?: string, propagate = true): Promise<string> {
+export async function saveMealComponent(
+  name: string,
+  caloriesPerUnit: number,
+  units?: string,
+  id?: string,
+  propagate = true,
+): Promise<string> {
   const db = await openDB();
   let resolvedId = id;
   if (!resolvedId) {
     // Look up any existing record by name to preserve its id.
-    const existing = await new Promise<{ id?: string } | undefined>((res, rej) => {
-      const r = db
-        .transaction(INGREDIENTS_STORE, "readonly")
-        .objectStore(INGREDIENTS_STORE)
-        .index("by_name")
-        .get(name);
-      r.onsuccess = () => res(r.result as { id?: string } | undefined);
-      r.onerror = () => rej(r.error);
-    });
+    const existing = await new Promise<{ id?: string } | undefined>(
+      (res, rej) => {
+        const r = db
+          .transaction(INGREDIENTS_STORE, "readonly")
+          .objectStore(INGREDIENTS_STORE)
+          .index("by_name")
+          .get(name);
+        r.onsuccess = () => res(r.result as { id?: string } | undefined);
+        r.onerror = () => rej(r.error);
+      },
+    );
     resolvedId = existing?.id ?? crypto.randomUUID();
   }
-  const doc: Record<string, unknown> = { id: resolvedId, name, nameLower: name.toLowerCase(), caloriesPerUnit };
+  const doc: Record<string, unknown> = {
+    id: resolvedId,
+    name,
+    nameLower: name.toLowerCase(),
+    caloriesPerUnit,
+  };
   if (units && units.trim()) doc.units = units.trim();
   await new Promise<void>((resolve, reject) => {
     const tx = db.transaction(INGREDIENTS_STORE, "readwrite");
@@ -105,11 +131,14 @@ async function propagateMealComponentUpdate(
     const cursorReq = store.openCursor();
     cursorReq.onsuccess = () => {
       const cursor = cursorReq.result;
-      if (!cursor) { resolve(); return; }
+      if (!cursor) {
+        resolve();
+        return;
+      }
       const entry = cursor.value as DiaryEntry;
       let changed = false;
       for (const meal of entry.meals) {
-        for (const comp of (meal.components ?? [])) {
+        for (const comp of meal.components ?? []) {
           if (comp.ingredientId === ingredientId) {
             comp.name = name;
             if (comp.quantity != null) {

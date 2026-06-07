@@ -22,7 +22,9 @@
   font-family: inherit;
   color: #718096;
   cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
 }
 
 .diary-tab:hover:not(.active) {

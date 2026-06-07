@@ -7,7 +7,13 @@ interface SaveMealComponentDialogProps {
   initialUnits?: string;
   id?: string;
   title?: string;
-  onSave: (name: string, caloriesPerUnit: number, units: string, id?: string, propagate?: boolean) => void;
+  onSave: (
+    name: string,
+    caloriesPerUnit: number,
+    units: string,
+    id?: string,
+    propagate?: boolean,
+  ) => void;
   onCancel: () => void;
 }
 
@@ -21,7 +27,9 @@ export default function SaveMealComponentDialog({
   onCancel,
 }: SaveMealComponentDialogProps) {
   const [name, setName] = useState(initialName);
-  const [calStr, setCalStr] = useState(initialCaloriesPerUnit != null ? String(initialCaloriesPerUnit) : "");
+  const [calStr, setCalStr] = useState(
+    initialCaloriesPerUnit != null ? String(initialCaloriesPerUnit) : "",
+  );
   const [units, setUnits] = useState(initialUnits ?? "");
   const [propagate, setPropagate] = useState(true);
   const calRef = useRef<HTMLInputElement>(null);

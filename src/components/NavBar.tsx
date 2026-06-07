@@ -1,7 +1,6 @@
 import "./NavBar.css";
 import { type View } from "../types/View";
 
-
 interface NavBarProps {
   active: View;
   onChange: (view: View) => void;

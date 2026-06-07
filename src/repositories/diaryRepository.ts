@@ -19,7 +19,16 @@ export async function getDiaryEntry(date: string): Promise<DiaryEntry | null> {
 /** Write (or overwrite) the diary entry for a given date key. */
 export async function saveDiaryEntry(
   date: string,
-  data: { id?: string; weight: DiaryEntry["weight"]; meals: Array<Omit<Meal, "id" | "calories"> & { id?: string; components: Array<MealComponent & { id?: string }> }> },
+  data: {
+    id?: string;
+    weight: DiaryEntry["weight"];
+    meals: Array<
+      Omit<Meal, "id" | "calories"> & {
+        id?: string;
+        components: Array<MealComponent & { id?: string }>;
+      }
+    >;
+  },
 ): Promise<void> {
   // Fetch existing entry to preserve its top-level id if not provided.
   const existing = await getDiaryEntry(date);
@@ -28,7 +37,8 @@ export async function saveDiaryEntry(
     const mealId = m.id ?? existing?.meals[mi]?.id ?? crypto.randomUUID();
     const components = m.components.map((c, ci) => ({
       ...c,
-      id: c.id ?? existing?.meals[mi]?.components[ci]?.id ?? crypto.randomUUID(),
+      id:
+        c.id ?? existing?.meals[mi]?.components[ci]?.id ?? crypto.randomUUID(),
     }));
     const mealCal = components.reduce<number | null>((s, c) => {
       if (c.calories == null) return s;
@@ -45,7 +55,13 @@ export async function saveDiaryEntry(
     const req = db
       .transaction(DIARY_STORE, "readwrite")
       .objectStore(DIARY_STORE)
-      .put({ id: entryId, date, weight: data.weight, meals: mealsWithCalories, calories });
+      .put({
+        id: entryId,
+        date,
+        weight: data.weight,
+        meals: mealsWithCalories,
+        calories,
+      });
     req.onsuccess = () => resolve();
     req.onerror = () => reject(req.error);
   });

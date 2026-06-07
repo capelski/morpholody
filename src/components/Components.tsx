@@ -21,8 +21,20 @@ export default function Components() {
     reload();
   }, []);
 
-  async function handleSave(name: string, caloriesPerUnit: number, units: string, id?: string, propagate?: boolean) {
-    await saveMealComponent(name, caloriesPerUnit, units, id, propagate ?? true);
+  async function handleSave(
+    name: string,
+    caloriesPerUnit: number,
+    units: string,
+    id?: string,
+    propagate?: boolean,
+  ) {
+    await saveMealComponent(
+      name,
+      caloriesPerUnit,
+      units,
+      id,
+      propagate ?? true,
+    );
     setEditing(null);
     setCreating(false);
     reload();
@@ -34,7 +46,10 @@ export default function Components() {
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const clampedPage = Math.min(page, totalPages - 1);
-  const pageItems = filtered.slice(clampedPage * PAGE_SIZE, (clampedPage + 1) * PAGE_SIZE);
+  const pageItems = filtered.slice(
+    clampedPage * PAGE_SIZE,
+    (clampedPage + 1) * PAGE_SIZE,
+  );
 
   function handleFilterChange(value: string) {
     setFilter(value);
@@ -51,7 +66,10 @@ export default function Components() {
           value={filter}
           onChange={(e) => handleFilterChange(e.target.value)}
         />
-        <button className="components-new-btn" onClick={() => setCreating(true)}>
+        <button
+          className="components-new-btn"
+          onClick={() => setCreating(true)}
+        >
           + New
         </button>
       </div>

@@ -19,7 +19,9 @@
   color: #2d3748;
   background: #f7fafc;
   outline: none;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
 }
 
 .components-filter:focus {
@@ -102,7 +104,10 @@
   font-family: inherit;
   color: #4a5568;
   cursor: pointer;
-  transition: background 0.12s, color 0.12s, border-color 0.12s;
+  transition:
+    background 0.12s,
+    color 0.12s,
+    border-color 0.12s;
 }
 
 .components-edit-btn:hover {
@@ -129,7 +134,9 @@
   line-height: 1;
   cursor: pointer;
   color: #4a5568;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
 }
 
 .components-page-btn:hover:not(:disabled) {

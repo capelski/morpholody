@@ -14,7 +14,9 @@ export function applyVersion8(
     if (!entry.id) entry.id = crypto.randomUUID();
     for (const meal of (entry.meals ?? []) as Array<Record<string, unknown>>) {
       if (!meal.id) meal.id = crypto.randomUUID();
-      for (const comp of (meal.components ?? []) as Array<Record<string, unknown>>) {
+      for (const comp of (meal.components ?? []) as Array<
+        Record<string, unknown>
+      >) {
         if (!comp.id) comp.id = crypto.randomUUID();
       }
     }

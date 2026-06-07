@@ -85,7 +85,11 @@ interface EvolutionProps {
   onMonthChange: (year: number, month: number) => void;
 }
 
-export default function Evolution({ viewYear, viewMonth, onMonthChange }: EvolutionProps) {
+export default function Evolution({
+  viewYear,
+  viewMonth,
+  onMonthChange,
+}: EvolutionProps) {
   const month = viewMonth + 1; // storage uses 1-indexed months
 
   const [data, setData] = useState<ChartPoint[]>([]);
@@ -138,7 +142,11 @@ export default function Evolution({ viewYear, viewMonth, onMonthChange }: Evolut
 
   return (
     <div className="evolution">
-      <MonthSelector viewYear={viewYear} viewMonth={viewMonth} onMonthChange={onMonthChange} />
+      <MonthSelector
+        viewYear={viewYear}
+        viewMonth={viewMonth}
+        onMonthChange={onMonthChange}
+      />
       <div className="evolution-header">
         <h2 className="evolution-title">Weight evolution</h2>
         <span className="evolution-count">
@@ -193,7 +201,11 @@ export default function Evolution({ viewYear, viewMonth, onMonthChange }: Evolut
                 width={44}
               />
             )}
-            <Tooltip content={(props: any) => <CustomTooltip {...props} shiftCalories={shiftCalories} />} />
+            <Tooltip
+              content={(props: any) => (
+                <CustomTooltip {...props} shiftCalories={shiftCalories} />
+              )}
+            />
             <Line
               yAxisId="weight"
               type="monotone"

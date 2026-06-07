@@ -22,7 +22,9 @@ export function openDB(): Promise<IDBDatabase> {
 
         if (e.oldVersion === 0) {
           db.createObjectStore(DIARY_STORE, { keyPath: "date" });
-          const ingStore = db.createObjectStore(INGREDIENTS_STORE, { keyPath: "id" });
+          const ingStore = db.createObjectStore(INGREDIENTS_STORE, {
+            keyPath: "id",
+          });
           ingStore.createIndex("by_name_lower", "nameLower");
           ingStore.createIndex("by_name", "name");
           return;

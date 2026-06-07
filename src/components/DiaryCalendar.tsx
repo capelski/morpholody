@@ -21,7 +21,11 @@ interface DiaryCalendarProps {
   onMonthChange: (year: number, month: number) => void;
 }
 
-export default function DiaryCalendar({ viewYear, viewMonth, onMonthChange }: DiaryCalendarProps) {
+export default function DiaryCalendar({
+  viewYear,
+  viewMonth,
+  onMonthChange,
+}: DiaryCalendarProps) {
   const today = new Date();
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [dayData, setDayData] = useState<
@@ -89,8 +93,12 @@ export default function DiaryCalendar({ viewYear, viewMonth, onMonthChange }: Di
   return (
     <>
       <div className="diary-calendar">
-        <MonthSelector viewYear={viewYear} viewMonth={viewMonth} onMonthChange={onMonthChange} />
-        
+        <MonthSelector
+          viewYear={viewYear}
+          viewMonth={viewMonth}
+          onMonthChange={onMonthChange}
+        />
+
         <div className="diary-calendar-weekdays">
           {DAYS_OF_WEEK.map((d) => (
             <div key={d} className="weekday">
@@ -125,8 +133,6 @@ export default function DiaryCalendar({ viewYear, viewMonth, onMonthChange }: Di
             </button>
           ))}
         </div>
-
-
       </div>
 
       {selectedDate && (

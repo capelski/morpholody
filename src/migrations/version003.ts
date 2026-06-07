@@ -9,7 +9,11 @@ export function applyVersion3(
   const diaryStore = db.createObjectStore("diary", { keyPath: "date" });
   const diary = new Map<
     string,
-    { date: string; weight: number | null; meals: Array<{ time: string; description: string }> }
+    {
+      date: string;
+      weight: number | null;
+      meals: Array<{ time: string; description: string }>;
+    }
   >();
 
   const weightReq = tx.objectStore("weights").openCursor();
@@ -37,12 +41,17 @@ export function applyVersion3(
         mealReq.onsuccess = () => {
           const cursor = mealReq.result;
           if (cursor) {
-            const { dateKey: dk, time, description } = cursor.value as {
+            const {
+              dateKey: dk,
+              time,
+              description,
+            } = cursor.value as {
               dateKey: string;
               time: string;
               description: string;
             };
-            if (!diary.has(dk)) diary.set(dk, { date: dk, weight: null, meals: [] });
+            if (!diary.has(dk))
+              diary.set(dk, { date: dk, weight: null, meals: [] });
             diary.get(dk)!.meals.push({ time, description });
             cursor.continue();
           } else {

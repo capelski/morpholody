@@ -28,7 +28,11 @@ function buildRows(year: number, month: number, entries: DiaryEntry[]): Row[] {
   return rows;
 }
 
-export default function DiaryList({ viewYear, viewMonth, onMonthChange }: DiaryListProps) {
+export default function DiaryList({
+  viewYear,
+  viewMonth,
+  onMonthChange,
+}: DiaryListProps) {
   const [entries, setEntries] = useState<DiaryEntry[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
@@ -69,14 +73,21 @@ export default function DiaryList({ viewYear, viewMonth, onMonthChange }: DiaryL
   return (
     <>
       <div className="diary-list">
-        <MonthSelector viewYear={viewYear} viewMonth={viewMonth} onMonthChange={onMonthChange} />
+        <MonthSelector
+          viewYear={viewYear}
+          viewMonth={viewMonth}
+          onMonthChange={onMonthChange}
+        />
 
         <ul className="diary-list-entries">
           {rows.map(({ dateStr, entry }) => {
             const [y, m, d] = dateStr.split("-").map(Number);
-            const isSelected = selectedDate?.toDateString() === new Date(y, m - 1, d).toDateString();
+            const isSelected =
+              selectedDate?.toDateString() ===
+              new Date(y, m - 1, d).toDateString();
             const cal = entry ? totalCalories(entry) : null;
-            const meals = entry?.meals.filter((meal) => meal.components?.length > 0) ?? [];
+            const meals =
+              entry?.meals.filter((meal) => meal.components?.length > 0) ?? [];
             return (
               <li
                 key={dateStr}
@@ -87,7 +98,9 @@ export default function DiaryList({ viewYear, viewMonth, onMonthChange }: DiaryL
                   <span className="diary-list-date">{formatDate(dateStr)}</span>
                   <span className="diary-list-meta">
                     {entry?.weight != null && (
-                      <span className="diary-list-weight">{entry.weight} kg</span>
+                      <span className="diary-list-weight">
+                        {entry.weight} kg
+                      </span>
                     )}
                     {cal != null && (
                       <span className="diary-list-cal">{cal} kcal</span>
@@ -98,13 +111,19 @@ export default function DiaryList({ viewYear, viewMonth, onMonthChange }: DiaryL
                   <ul className="diary-list-meals">
                     {meals.map((meal, i) => (
                       <li key={i} className="diary-list-meal">
-                        <span className="diary-list-meal-time">{meal.time}</span>
+                        <span className="diary-list-meal-time">
+                          {meal.time}
+                        </span>
                         <ul className="diary-list-components">
                           {meal.components.map((c, j) => (
                             <li key={j} className="diary-list-component">
-                              <span className="diary-list-component-name">{c.name}</span>
+                              <span className="diary-list-component-name">
+                                {c.name}
+                              </span>
                               {c.calories != null && (
-                                <span className="diary-list-component-cal">{c.calories} kcal</span>
+                                <span className="diary-list-component-cal">
+                                  {c.calories} kcal
+                                </span>
                               )}
                             </li>
                           ))}

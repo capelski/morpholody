@@ -22,9 +22,17 @@ export default function App() {
       <NavBar active={view} onChange={setView} />
       <div className="app-content">
         {view === "diary" ? (
-          <Diary viewYear={viewYear} viewMonth={viewMonth} onMonthChange={handleMonthChange} />
+          <Diary
+            viewYear={viewYear}
+            viewMonth={viewMonth}
+            onMonthChange={handleMonthChange}
+          />
         ) : view === "evolution" ? (
-          <Evolution viewYear={viewYear} viewMonth={viewMonth} onMonthChange={handleMonthChange} />
+          <Evolution
+            viewYear={viewYear}
+            viewMonth={viewMonth}
+            onMonthChange={handleMonthChange}
+          />
         ) : (
           <Components />
         )}
