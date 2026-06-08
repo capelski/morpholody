@@ -5,13 +5,7 @@ import './IngredientDialog.css';
 interface IngredientDialogProps {
   ingredient?: Ingredient;
   title?: string;
-  onSave: (
-    name: string,
-    caloriesPerUnit: number,
-    units: string,
-    id?: string,
-    propagate?: boolean,
-  ) => void;
+  onSave: (name: string, caloriesPerUnit: number, units: string, id?: string) => void;
   onCancel: () => void;
 }
 
@@ -26,7 +20,6 @@ export default function IngredientDialog({
     ingredient?.caloriesPerUnit ? String(ingredient.caloriesPerUnit) : '',
   );
   const [units, setUnits] = useState(ingredient?.units ?? '');
-  const [propagate, setPropagate] = useState(true);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -40,7 +33,7 @@ export default function IngredientDialog({
     e.preventDefault();
     const cal = parseFloat(calStr);
     if (!name.trim() || isNaN(cal) || cal <= 0) return;
-    onSave(name.trim(), cal, units, ingredient?.id, propagate);
+    onSave(name.trim(), cal, units, ingredient?.id);
   }
 
   const valid = name.trim() !== '' && parseFloat(calStr) > 0;
@@ -103,19 +96,6 @@ export default function IngredientDialog({
               <span className="mcd-input-unit">kcal</span>
             </div>
           </div>
-          {ingredient?.id && (
-            <div className="mcd-field mcd-field-checkbox">
-              <input
-                id="mcd-propagate"
-                type="checkbox"
-                checked={propagate}
-                onChange={(e) => setPropagate(e.target.checked)}
-              />
-              <label htmlFor="mcd-propagate">
-                Propagate changes to meals that use this component
-              </label>
-            </div>
-          )}
           <div className="mcd-actions">
             <button type="button" className="mcd-btn-cancel" onClick={onCancel}>
               Cancel

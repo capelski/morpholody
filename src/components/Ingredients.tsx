@@ -22,14 +22,8 @@ export default function Ingredients() {
     reload();
   }, []);
 
-  async function handleSave(
-    name: string,
-    caloriesPerUnit: number,
-    units: string,
-    id?: string,
-    propagate?: boolean,
-  ) {
-    await saveMealComponent(name, caloriesPerUnit, units, id, propagate ?? true);
+  async function handleSave(name: string, caloriesPerUnit: number, units: string, id?: string) {
+    await saveMealComponent(name, caloriesPerUnit, units, id);
     setEditing(null);
     setCreating(false);
     reload();

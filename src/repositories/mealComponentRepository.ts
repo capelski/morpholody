@@ -1,4 +1,4 @@
-import { openDB, DIARY_STORE, INGREDIENTS_STORE } from '../db';
+import { DIARY_STORE, INGREDIENTS_STORE, openDB } from '../db';
 import { type DiaryEntry } from '../types/DiaryEntry';
 import { type Ingredient } from '../types/Ingredient';
 
@@ -74,7 +74,6 @@ export async function saveMealComponent(
   caloriesPerUnit: number,
   units?: string,
   id?: string,
-  propagate = true,
 ): Promise<string> {
   const db = await openDB();
   let resolvedId = id;
@@ -105,9 +104,7 @@ export async function saveMealComponent(
     req.onerror = () => reject(req.error);
   });
 
-  if (propagate) {
-    await propagateMealComponentUpdate(db, resolvedId, name, caloriesPerUnit);
-  }
+  await propagateMealComponentUpdate(db, resolvedId, name, caloriesPerUnit);
 
   return resolvedId;
 }
