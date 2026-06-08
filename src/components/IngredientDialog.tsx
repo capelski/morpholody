@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Ingredient } from '../types/Ingredient';
 import './IngredientDialog.css';
 
@@ -23,15 +23,10 @@ export default function IngredientDialog({
 }: IngredientDialogProps) {
   const [name, setName] = useState(ingredient?.name ?? '');
   const [calStr, setCalStr] = useState(
-    ingredient?.caloriesPerUnit != null ? String(ingredient.caloriesPerUnit) : '',
+    ingredient?.caloriesPerUnit ? String(ingredient.caloriesPerUnit) : '',
   );
   const [units, setUnits] = useState(ingredient?.units ?? '');
   const [propagate, setPropagate] = useState(true);
-  const calRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    calRef.current?.focus();
-  }, []);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -96,7 +91,6 @@ export default function IngredientDialog({
             </label>
             <div className="mcd-input-row">
               <input
-                ref={calRef}
                 id="mcd-cal"
                 type="number"
                 className="mcd-input"
