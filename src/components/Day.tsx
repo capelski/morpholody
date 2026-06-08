@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { toDateKey } from '../logic/date';
+import { createIngredient } from '../logic/ingredient';
 import {
   getDiaryEntry,
   getMealComponentById,
@@ -619,7 +620,7 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
       </div>
       {savingComponent !== null && (
         <IngredientDialog
-          initialName={savingComponent.name}
+          ingredient={createIngredient(savingComponent.name)}
           onSave={handleSaveMealComponent}
           onCancel={() => setSavingComponent(null)}
         />

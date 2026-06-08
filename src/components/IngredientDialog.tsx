@@ -1,11 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
+import { Ingredient } from '../types/Ingredient';
 import './IngredientDialog.css';
 
-interface SaveMealComponentDialogProps {
-  initialName: string;
-  initialCaloriesPerUnit?: number;
-  initialUnits?: string;
-  id?: string;
+interface IngredientDialogProps {
+  ingredient?: Ingredient;
   title?: string;
   onSave: (
     name: string,
@@ -18,19 +16,16 @@ interface SaveMealComponentDialogProps {
 }
 
 export default function IngredientDialog({
-  initialName,
-  initialCaloriesPerUnit,
-  initialUnits,
-  id,
+  ingredient,
   title = 'New meal component',
   onSave,
   onCancel,
-}: SaveMealComponentDialogProps) {
-  const [name, setName] = useState(initialName);
+}: IngredientDialogProps) {
+  const [name, setName] = useState(ingredient?.name ?? '');
   const [calStr, setCalStr] = useState(
-    initialCaloriesPerUnit != null ? String(initialCaloriesPerUnit) : '',
+    ingredient?.caloriesPerUnit != null ? String(ingredient.caloriesPerUnit) : '',
   );
-  const [units, setUnits] = useState(initialUnits ?? '');
+  const [units, setUnits] = useState(ingredient?.units ?? '');
   const [propagate, setPropagate] = useState(true);
   const calRef = useRef<HTMLInputElement>(null);
 
@@ -50,7 +45,7 @@ export default function IngredientDialog({
     e.preventDefault();
     const cal = parseFloat(calStr);
     if (!name.trim() || isNaN(cal) || cal <= 0) return;
-    onSave(name.trim(), cal, units, id, propagate);
+    onSave(name.trim(), cal, units, ingredient?.id, propagate);
   }
 
   const valid = name.trim() !== '' && parseFloat(calStr) > 0;
@@ -114,7 +109,7 @@ export default function IngredientDialog({
               <span className="mcd-input-unit">kcal</span>
             </div>
           </div>
-          {id && (
+          {ingredient?.id && (
             <div className="mcd-field mcd-field-checkbox">
               <input
                 id="mcd-propagate"

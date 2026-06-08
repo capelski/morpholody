@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { createIngredient } from '../logic/ingredient';
 import { getAllMealComponents, saveMealComponent } from '../storage';
 import { type Ingredient } from '../types/Ingredient';
 import IngredientDialog from './IngredientDialog';
@@ -117,15 +118,16 @@ export default function Ingredients() {
         </>
       )}
       {creating && (
-        <IngredientDialog initialName="" onSave={handleSave} onCancel={() => setCreating(false)} />
+        <IngredientDialog
+          ingredient={createIngredient('')}
+          onSave={handleSave}
+          onCancel={() => setCreating(false)}
+        />
       )}
       {editing && (
         <IngredientDialog
+          ingredient={editing}
           title="Edit meal component"
-          initialName={editing.name}
-          initialCaloriesPerUnit={editing.caloriesPerUnit}
-          initialUnits={editing.units}
-          id={editing.id}
           onSave={handleSave}
           onCancel={() => setEditing(null)}
         />

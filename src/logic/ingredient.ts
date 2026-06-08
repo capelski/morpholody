@@ -1,7 +1,8 @@
 import { Ingredient } from '../storage';
 
-export const parseIngredient = (ingredient: unknown): Ingredient | undefined => {
-  if (typeof ingredient !== 'object' || !ingredient) {
-    return undefined;
-  }
-};
+export const createIngredient = (name: string): Ingredient => ({
+  id: crypto.randomUUID(),
+  name,
+  nameLower: name.toLowerCase(),
+  caloriesPerUnit: 0,
+});
