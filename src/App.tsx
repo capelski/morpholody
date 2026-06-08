@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import NavBar from './components/NavBar';
+import './App.css';
 import Diary from './components/Diary';
 import Evolution from './components/Evolution';
-import Components from './components/Components';
-import './App.css';
+import Ingredients from './components/Ingredients';
+import NavBar from './components/NavBar';
 import { type View } from './types/View';
 
 export default function App() {
@@ -26,7 +26,7 @@ export default function App() {
         ) : view === 'evolution' ? (
           <Evolution viewYear={viewYear} viewMonth={viewMonth} onMonthChange={handleMonthChange} />
         ) : (
-          <Components />
+          <Ingredients />
         )}
       </div>
     </div>

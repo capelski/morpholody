@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { getAllMealComponents, saveMealComponent } from '../storage';
-import SaveMealComponentDialog from './SaveMealComponentDialog';
-import './Components.css';
 import { type Ingredient } from '../types/Ingredient';
+import './Ingredients.css';
+import SaveMealComponentDialog from './SaveMealComponentDialog';
 
 const PAGE_SIZE = 20;
 
-export default function Components() {
+export default function Ingredients() {
   const [all, setAll] = useState<Ingredient[]>([]);
   const [filter, setFilter] = useState('');
   const [page, setPage] = useState(0);
