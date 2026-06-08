@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { getAllMealComponents, saveMealComponent } from '../storage';
 import { type Ingredient } from '../types/Ingredient';
+import IngredientDialog from './IngredientDialog';
 import './Ingredients.css';
-import SaveMealComponentDialog from './SaveMealComponentDialog';
 
 const PAGE_SIZE = 20;
 
@@ -117,14 +117,10 @@ export default function Ingredients() {
         </>
       )}
       {creating && (
-        <SaveMealComponentDialog
-          initialName=""
-          onSave={handleSave}
-          onCancel={() => setCreating(false)}
-        />
+        <IngredientDialog initialName="" onSave={handleSave} onCancel={() => setCreating(false)} />
       )}
       {editing && (
-        <SaveMealComponentDialog
+        <IngredientDialog
           title="Edit meal component"
           initialName={editing.name}
           initialCaloriesPerUnit={editing.caloriesPerUnit}

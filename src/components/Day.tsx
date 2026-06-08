@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
+import { toDateKey } from '../logic/date';
 import {
   getDiaryEntry,
-  saveDiaryEntry,
-  getMealComponentSuggestions,
-  saveMealComponent,
   getMealComponentById,
+  getMealComponentSuggestions,
+  saveDiaryEntry,
+  saveMealComponent,
 } from '../storage';
-import SaveMealComponentDialog from './SaveMealComponentDialog';
 import './Day.css';
-import { toDateKey } from '../logic/date';
+import IngredientDialog from './IngredientDialog';
 
 interface ComponentEntry {
   id: string | null;
@@ -618,7 +618,7 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
         </div>
       </div>
       {savingComponent !== null && (
-        <SaveMealComponentDialog
+        <IngredientDialog
           initialName={savingComponent.name}
           onSave={handleSaveMealComponent}
           onCancel={() => setSavingComponent(null)}

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import './SaveMealComponentDialog.css';
+import './IngredientDialog.css';
 
 interface SaveMealComponentDialogProps {
   initialName: string;
@@ -17,7 +17,7 @@ interface SaveMealComponentDialogProps {
   onCancel: () => void;
 }
 
-export default function SaveMealComponentDialog({
+export default function IngredientDialog({
   initialName,
   initialCaloriesPerUnit,
   initialUnits,
