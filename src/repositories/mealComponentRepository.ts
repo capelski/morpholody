@@ -3,9 +3,7 @@ import { type DiaryEntry } from '../types/DiaryEntry';
 import { type Ingredient } from '../types/Ingredient';
 
 /** Fetch meal component suggestions matching the given prefix (case-insensitive, up to 10). */
-export async function getMealComponentSuggestions(
-  query: string,
-): Promise<{ id: string; name: string; caloriesPerUnit: number; unitsLabel?: string }[]> {
+export async function getMealComponentSuggestions(query: string): Promise<Ingredient[]> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const lower = query.toLowerCase();
@@ -14,13 +12,8 @@ export async function getMealComponentSuggestions(
       .objectStore(INGREDIENTS_STORE)
       .getAll();
     req.onsuccess = () => {
-      const all = req.result as {
-        id?: string;
-        name: string;
-        nameLower?: string;
-        caloriesPerUnit?: number;
-        unitsLabel?: string;
-      }[];
+      const all = req.result as Ingredient[];
+
       const starts: typeof all = [];
       const contains: typeof all = [];
       for (const r of all) {
@@ -28,14 +21,7 @@ export async function getMealComponentSuggestions(
         if (nl.startsWith(lower)) starts.push(r);
         else if (nl.includes(lower)) contains.push(r);
       }
-      resolve(
-        [...starts, ...contains].slice(0, 10).map((r) => ({
-          id: r.id ?? '',
-          name: r.name,
-          caloriesPerUnit: r.caloriesPerUnit ?? 0,
-          unitsLabel: r.unitsLabel,
-        })),
-      );
+      resolve([...starts, ...contains].slice(0, 10));
     };
     req.onerror = () => reject(req.error);
   });
