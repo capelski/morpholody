@@ -3,9 +3,10 @@ import { applyVersion4 } from './migrations/version004';
 import { applyVersion7 } from './migrations/version007';
 import { applyVersion8 } from './migrations/version008';
 import { applyVersion9 } from './migrations/version009';
+import { applyVersion10 } from './migrations/version010';
 
 const DB_NAME = 'morpholody';
-const DB_VERSION = 9;
+const DB_VERSION = 10;
 export const DIARY_STORE = 'diary';
 export const INGREDIENTS_STORE = 'ingredients';
 
@@ -35,6 +36,7 @@ export function openDB(): Promise<IDBDatabase> {
         applyVersion7(db, tx, e, reject);
         applyVersion8(db, tx, e, reject);
         applyVersion9(db, tx, e, reject);
+        applyVersion10(db, tx, e, reject);
       };
 
       req.onsuccess = () => resolve(req.result);

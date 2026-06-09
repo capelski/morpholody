@@ -17,7 +17,7 @@ interface ComponentEntry {
   quantity: number | null;
   calories: number | null;
   caloriesPerUnit: number | null;
-  units?: string;
+  unitsLabel?: string;
   ingredientId: string | null;
 }
 
@@ -87,7 +87,7 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
       id: string;
       name: string;
       caloriesPerUnit: number;
-      units?: string;
+      unitsLabel?: string;
     }[];
     active: number;
     hasExactMatch: boolean;
@@ -218,7 +218,7 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
     id: string;
     name: string;
     caloriesPerUnit: number;
-    units?: string;
+    unitsLabel?: string;
   }) {
     if (!nameSuggestions) return;
     const { mi, ci } = nameSuggestions;
@@ -228,7 +228,7 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
       name: suggestion.name,
       caloriesPerUnit: suggestion.caloriesPerUnit,
       calories,
-      units: suggestion.units,
+      unitsLabel: suggestion.unitsLabel,
       ingredientId: suggestion.id,
     });
     setNameSuggestions(null);
@@ -314,7 +314,7 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
                 quantity: c.quantity,
                 ingredientId: c.ingredientId,
                 caloriesPerUnit: c.caloriesPerUnit ?? 0,
-                ...(c.units ? { units: c.units } : {}),
+                ...(c.unitsLabel ? { unitsLabel: c.unitsLabel } : {}),
               };
             }
             return {
@@ -549,7 +549,7 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
                                   <input
                                     type="number"
                                     className="day-meal-field day-component-field--qty"
-                                    placeholder={comp.units ?? 'Qty'}
+                                    placeholder={comp.unitsLabel ?? 'Qty'}
                                     min="0"
                                     step="any"
                                     value={comp.quantity != null ? String(comp.quantity) : ''}

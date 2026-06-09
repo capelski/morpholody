@@ -20,7 +20,7 @@ export default function IngredientDialog({
   const [calStr, setCalStr] = useState(
     ingredient?.caloriesPerUnit ? String(ingredient.caloriesPerUnit) : '',
   );
-  const [units, setUnits] = useState(ingredient?.units ?? '');
+  const [unitsLabel, setUnitsLabel] = useState(ingredient?.unitsLabel ?? '');
   const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
@@ -45,7 +45,7 @@ export default function IngredientDialog({
         name: trimmedName,
         nameLower: trimmedName.toLowerCase(),
         caloriesPerUnit: cal,
-        units: units.trim(),
+        unitsLabel: unitsLabel.trim(),
       };
 
       try {
@@ -95,8 +95,8 @@ export default function IngredientDialog({
               type="text"
               className="mcd-input"
               placeholder="100g, 1 tbsp, 25oz, etc."
-              value={units}
-              onChange={(e) => setUnits(e.target.value)}
+              value={unitsLabel}
+              onChange={(e) => setUnitsLabel(e.target.value)}
             />
           </div>
           <div className="mcd-field">

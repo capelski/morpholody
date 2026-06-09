@@ -5,7 +5,7 @@ import { type Ingredient } from '../types/Ingredient';
 /** Fetch meal component suggestions matching the given prefix (case-insensitive, up to 10). */
 export async function getMealComponentSuggestions(
   query: string,
-): Promise<{ id: string; name: string; caloriesPerUnit: number; units?: string }[]> {
+): Promise<{ id: string; name: string; caloriesPerUnit: number; unitsLabel?: string }[]> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const lower = query.toLowerCase();
@@ -19,7 +19,7 @@ export async function getMealComponentSuggestions(
         name: string;
         nameLower?: string;
         caloriesPerUnit?: number;
-        units?: string;
+        unitsLabel?: string;
       }[];
       const starts: typeof all = [];
       const contains: typeof all = [];
@@ -33,7 +33,7 @@ export async function getMealComponentSuggestions(
           id: r.id ?? '',
           name: r.name,
           caloriesPerUnit: r.caloriesPerUnit ?? 0,
-          units: r.units,
+          unitsLabel: r.unitsLabel,
         })),
       );
     };

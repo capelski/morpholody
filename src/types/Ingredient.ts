@@ -3,5 +3,5 @@ export interface Ingredient {
   name: string;
   nameLower: string;
   caloriesPerUnit: number;
-  units?: string;
+  unitsLabel?: string;
 }

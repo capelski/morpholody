@@ -74,7 +74,7 @@ export default function Ingredients() {
                 <tr key={c.name}>
                   <td>{c.name}</td>
                   <td className="components-cell-num">{c.caloriesPerUnit}</td>
-                  <td>{c.units ?? '—'}</td>
+                  <td>{c.unitsLabel ?? '—'}</td>
                   <td className="components-cell-action">
                     <button
                       className="components-edit-btn"
