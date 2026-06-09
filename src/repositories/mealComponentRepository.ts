@@ -1,131 +1,115 @@
-import { DIARY_STORE, INGREDIENTS_STORE, openDB } from '../db';
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  setDoc,
+  where,
+  orderBy,
+  writeBatch,
+  type Firestore,
+} from 'firebase/firestore';
+import { db } from '../firebase';
 import { type DiaryEntry } from '../types/DiaryEntry';
 import { type Ingredient } from '../types/Ingredient';
 
-/** Fetch meal component suggestions matching the given prefix (case-insensitive, up to 10). */
-export async function getMealComponentSuggestions(query: string): Promise<Ingredient[]> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const lower = query.toLowerCase();
-    const req = db
-      .transaction(INGREDIENTS_STORE, 'readonly')
-      .objectStore(INGREDIENTS_STORE)
-      .getAll();
-    req.onsuccess = () => {
-      const all = req.result as Ingredient[];
+function ingredientsCollection(uid: string) {
+  return collection(db as Firestore, 'users', uid, 'ingredients');
+}
 
-      const starts: typeof all = [];
-      const contains: typeof all = [];
-      for (const r of all) {
-        const nl = r.nameLower ?? r.name.toLowerCase();
-        if (nl.startsWith(lower)) starts.push(r);
-        else if (nl.includes(lower)) contains.push(r);
-      }
-      resolve([...starts, ...contains].slice(0, 10));
-    };
-    req.onerror = () => reject(req.error);
-  });
+function diaryCollection(uid: string) {
+  return collection(db as Firestore, 'users', uid, 'diary');
+}
+
+/** Fetch meal component suggestions matching the given prefix (case-insensitive, up to 10). */
+export async function getMealComponentSuggestions(
+  uid: string,
+  queryStr: string,
+): Promise<Ingredient[]> {
+  const lower = queryStr.toLowerCase();
+  // Prefix range query on nameLower
+  const q = query(
+    ingredientsCollection(uid),
+    where('nameLower', '>=', lower),
+    where('nameLower', '<=', lower + ''),
+    orderBy('nameLower'),
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => d.data() as Ingredient).slice(0, 10);
 }
 
 /** Return a meal component by its ID, or undefined if not found. */
-export async function getMealComponentById(id: string): Promise<Ingredient | undefined> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const req = db
-      .transaction(INGREDIENTS_STORE, 'readonly')
-      .objectStore(INGREDIENTS_STORE)
-      .get(id);
-    req.onsuccess = () => resolve(req.result as Ingredient | undefined);
-    req.onerror = () => reject(req.error);
-  });
+export async function getMealComponentById(
+  uid: string,
+  id: string,
+): Promise<Ingredient | undefined> {
+  const snap = await getDoc(doc(ingredientsCollection(uid), id));
+  return snap.exists() ? (snap.data() as Ingredient) : undefined;
 }
 
-export async function getMealComponentByName(name: string): Promise<Ingredient | undefined> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const req = db
-      .transaction(INGREDIENTS_STORE, 'readonly')
-      .objectStore(INGREDIENTS_STORE)
-      .index('by_name')
-      .get(name);
-    req.onsuccess = () => resolve(req.result as Ingredient | undefined);
-    req.onerror = () => reject(req.error);
-  });
+export async function getMealComponentByName(
+  uid: string,
+  name: string,
+): Promise<Ingredient | undefined> {
+  const q = query(ingredientsCollection(uid), where('name', '==', name));
+  const snap = await getDocs(q);
+  return snap.empty ? undefined : (snap.docs[0].data() as Ingredient);
 }
 
 /** Return all meal components sorted by name (case-insensitive). */
-export async function getAllMealComponents(): Promise<Ingredient[]> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const req = db
-      .transaction(INGREDIENTS_STORE, 'readonly')
-      .objectStore(INGREDIENTS_STORE)
-      .index('by_name_lower')
-      .getAll();
-    req.onsuccess = () => resolve(req.result as Ingredient[]);
-    req.onerror = () => reject(req.error);
-  });
+export async function getAllMealComponents(uid: string): Promise<Ingredient[]> {
+  const q = query(ingredientsCollection(uid), orderBy('nameLower'));
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => d.data() as Ingredient);
 }
 
-/** Upsert a meal component into the mealComponents store */
-export async function upsertIngredient(ingredient: Ingredient): Promise<void> {
-  const db = await openDB();
-
-  await new Promise<void>((resolve, reject) => {
-    const tx = db.transaction(INGREDIENTS_STORE, 'readwrite');
-    const req = tx.objectStore(INGREDIENTS_STORE).put(ingredient);
-    req.onsuccess = () => resolve();
-    req.onerror = () => reject(req.error);
-  });
-
-  await propagateMealComponentUpdate(db, ingredient);
+/** Upsert a meal component and propagate name/calorie changes to diary entries. */
+export async function upsertIngredient(uid: string, ingredient: Ingredient): Promise<void> {
+  await setDoc(doc(ingredientsCollection(uid), ingredient.id), ingredient);
+  await propagateMealComponentUpdate(uid, ingredient);
 }
 
-/** Update all diary entries that contain components linked to the given meal component id. */
-async function propagateMealComponentUpdate(
-  db: IDBDatabase,
-  ingredient: Ingredient,
-): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(DIARY_STORE, 'readwrite');
-    const store = tx.objectStore(DIARY_STORE);
-    const cursorReq = store.openCursor();
-    cursorReq.onsuccess = () => {
-      const cursor = cursorReq.result;
-      if (!cursor) {
-        resolve();
-        return;
-      }
-      const entry = cursor.value as DiaryEntry;
-      let changed = false;
-      for (const meal of entry.meals) {
-        for (const comp of meal.components ?? []) {
-          if (comp.ingredientId === ingredient.id) {
-            comp.name = ingredient.name;
-            if (comp.units != null) {
-              comp.calories = Math.round((ingredient.caloriesPerUnit ?? 0) * comp.units);
-            }
-            changed = true;
+/** Update all diary entries that contain components linked to the given ingredient. */
+async function propagateMealComponentUpdate(uid: string, ingredient: Ingredient): Promise<void> {
+  const snap = await getDocs(diaryCollection(uid));
+  const affected = snap.docs
+    .map((d) => d.data() as DiaryEntry)
+    .filter((entry) =>
+      entry.meals.some((meal) =>
+        meal.components?.some((comp) => comp.ingredientId === ingredient.id),
+      ),
+    );
+
+  if (affected.length === 0) return;
+
+  const batch = writeBatch(db);
+  for (const entry of affected) {
+    let changed = false;
+    for (const meal of entry.meals) {
+      for (const comp of meal.components ?? []) {
+        if (comp.ingredientId === ingredient.id) {
+          comp.name = ingredient.name;
+          if (comp.units != null) {
+            comp.calories = Math.round((ingredient.caloriesPerUnit ?? 0) * comp.units);
           }
-        }
-        if (changed) {
-          meal.calories = meal.components.reduce<number | null>((s, c) => {
-            if (c.calories == null) return s;
-            return (s ?? 0) + c.calories;
-          }, null);
+          changed = true;
         }
       }
       if (changed) {
-        const totalCalories = entry.meals.reduce<number | null>((s, m) => {
-          if (m.calories == null) return s;
-          return (s ?? 0) + m.calories;
+        meal.calories = meal.components.reduce<number | null>((s, c) => {
+          if (c.calories == null) return s;
+          return (s ?? 0) + c.calories;
         }, null);
-        cursor.update({ ...entry, calories: totalCalories });
       }
-      cursor.continue();
-    };
-    cursorReq.onerror = () => reject(cursorReq.error);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
+    }
+    if (changed) {
+      const totalCalories = entry.meals.reduce<number | null>((s, m) => {
+        if (m.calories == null) return s;
+        return (s ?? 0) + m.calories;
+      }, null);
+      batch.set(doc(diaryCollection(uid), entry.date), { ...entry, calories: totalCalories });
+    }
+  }
+  await batch.commit();
 }

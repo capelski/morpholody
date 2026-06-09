@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useUid } from '../context/AuthContext';
 import { getDiaryEntriesForMonth, type DiaryEntry } from '../storage';
 import Day from './Day';
 import MonthSelector from './MonthSelector';
@@ -29,11 +30,12 @@ function buildRows(year: number, month: number, entries: DiaryEntry[]): Row[] {
 }
 
 export default function DiaryList({ viewYear, viewMonth, onMonthChange }: DiaryListProps) {
+  const uid = useUid();
   const [entries, setEntries] = useState<DiaryEntry[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
   function reload() {
-    getDiaryEntriesForMonth(viewYear, viewMonth + 1).then(setEntries);
+    getDiaryEntriesForMonth(uid, viewYear, viewMonth + 1).then(setEntries);
   }
 
   useEffect(() => {

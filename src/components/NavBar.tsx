@@ -4,9 +4,10 @@ import { type View } from '../types/View';
 interface NavBarProps {
   active: View;
   onChange: (view: View) => void;
+  onSignOut?: () => void;
 }
 
-export default function NavBar({ active, onChange }: NavBarProps) {
+export default function NavBar({ active, onChange, onSignOut }: NavBarProps) {
   return (
     <nav className="navbar">
       <div className="navbar-tabs">
@@ -32,6 +33,11 @@ export default function NavBar({ active, onChange }: NavBarProps) {
           Components
         </button>
       </div>
+      {onSignOut && (
+        <button className="navbar-signout" onClick={onSignOut} aria-label="Sign out">
+          Sign out
+        </button>
+      )}
     </nav>
   );
 }

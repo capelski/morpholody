@@ -7,8 +7,8 @@ export const createIngredient = (name: string): Ingredient => ({
   caloriesPerUnit: 0,
 });
 
-export const updateIngredient = async (ingredient: Ingredient): Promise<void> => {
-  const existing = await getMealComponentByName(ingredient.name);
+export const updateIngredient = async (uid: string, ingredient: Ingredient): Promise<void> => {
+  const existing = await getMealComponentByName(uid, ingredient.name);
 
   if (existing && existing.id !== ingredient.id) {
     throw new Error('An ingredient with this name already exists');
@@ -20,5 +20,5 @@ export const updateIngredient = async (ingredient: Ingredient): Promise<void> =>
     ingredient.unitsLabel = ingredient.unitsLabel.trim();
   }
 
-  await upsertIngredient(ingredient);
+  await upsertIngredient(uid, ingredient);
 };

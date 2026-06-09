@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { MONTHS } from '../constants/months';
+import { useUid } from '../context/AuthContext';
 import { getDayIndicatorClass } from '../logic/diaryEntry';
 import { DiaryEntryMap, getMonthEntries } from '../storage';
 import Day from './Day';
@@ -23,6 +24,7 @@ interface DiaryCalendarProps {
 }
 
 export default function DiaryCalendar({ viewYear, viewMonth, onMonthChange }: DiaryCalendarProps) {
+  const uid = useUid();
   const today = new Date();
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [monthEntries, setMonthEntries] = useState<DiaryEntryMap>(new Map());
@@ -30,7 +32,7 @@ export default function DiaryCalendar({ viewYear, viewMonth, onMonthChange }: Di
   const firstDay = getFirstDayOfMonth(viewYear, viewMonth);
 
   useEffect(() => {
-    getMonthEntries(viewYear, viewMonth + 1).then(setMonthEntries);
+    getMonthEntries(uid, viewYear, viewMonth + 1).then(setMonthEntries);
   }, [viewYear, viewMonth]);
 
   useEffect(() => {
@@ -114,7 +116,7 @@ export default function DiaryCalendar({ viewYear, viewMonth, onMonthChange }: Di
           date={selectedDate}
           onClose={() => setSelectedDate(null)}
           onSaved={() => {
-            getMonthEntries(viewYear, viewMonth + 1).then(setMonthEntries);
+            getMonthEntries(uid, viewYear, viewMonth + 1).then(setMonthEntries);
           }}
           onDateChange={(d) => setSelectedDate(d)}
         />

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useUid } from '../context/AuthContext';
 import { toDateKey } from '../logic/date';
 import { createIngredient } from '../logic/ingredient';
 import {
@@ -77,6 +78,7 @@ function isMealEmpty(meal: MealEntry): boolean {
 }
 
 export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) {
+  const uid = useUid();
   const [weightStr, setWeightStr] = useState('');
   const [meals, setMeals] = useState<MealEntry[]>([ghostMeal()]);
   const [editingMeals, setEditingMeals] = useState(false);
@@ -99,7 +101,7 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
     setWeightStr('');
     setMeals([ghostMeal()]);
     setEditingMeals(false);
-    getDiaryEntry(toDateKey(date)).then(async (entry) => {
+    getDiaryEntry(uid, toDateKey(date)).then(async (entry) => {
       setWeightStr(entry?.weight != null ? String(entry.weight) : '');
       const loadedMeals = await Promise.all(
         (entry?.meals ?? []).map(async (m) => ({
@@ -120,7 +122,7 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
                       };
 
                       if (c.ingredientId) {
-                        const mc = await getMealComponentById(c.ingredientId);
+                        const mc = await getMealComponentById(uid, c.ingredientId);
                         component.caloriesPerUnit = mc?.caloriesPerUnit ?? null;
                         component.unitsLabel = mc?.unitsLabel;
                       }
@@ -208,7 +210,7 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
     updateComponent(mealIndex, componentIndex, { name: value });
     const trimmed = value.trim();
     if (trimmed.length > 0) {
-      const items = await getMealComponentSuggestions(trimmed);
+      const items = await getMealComponentSuggestions(uid, trimmed);
       const hasExactMatch = items.some((item) => item.name.toLowerCase() === trimmed.toLowerCase());
       setIngredientSuggestions({
         mealIndex,
@@ -339,7 +341,7 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
           }),
       }))
       .sort((a, b) => a.time.localeCompare(b.time));
-    await saveDiaryEntry(toDateKey(date), { weight, meals: mealsToSave });
+    await saveDiaryEntry(uid, toDateKey(date), { weight, meals: mealsToSave });
     onSaved?.();
     onClose();
   }

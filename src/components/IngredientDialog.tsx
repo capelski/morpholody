@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useUid } from '../context/AuthContext';
 import { updateIngredient } from '../logic/ingredient';
 import { Ingredient } from '../types/Ingredient';
 import './IngredientDialog.css';
@@ -16,6 +17,7 @@ export default function IngredientDialog({
   onSaved,
   onCancel,
 }: IngredientDialogProps) {
+  const uid = useUid();
   const [name, setName] = useState(ingredient?.name ?? '');
   const [calStr, setCalStr] = useState(
     ingredient?.caloriesPerUnit ? String(ingredient.caloriesPerUnit) : '',
@@ -47,7 +49,7 @@ export default function IngredientDialog({
       };
 
       try {
-        await updateIngredient(updatedIngredient);
+        await updateIngredient(uid, updatedIngredient);
         onSaved(updatedIngredient);
       } catch (err) {
         setErrorMessage(

@@ -1,20 +1,31 @@
-import { DIARY_STORE, openDB } from '../db';
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  setDoc,
+  where,
+  type Firestore,
+} from 'firebase/firestore';
+import { db } from '../firebase';
 import { DiaryEntryMap, type DiaryEntry } from '../types/DiaryEntry';
 import { type Meal } from '../types/Meal';
 import { type MealComponent } from '../types/MealComponent';
 
+function diaryCollection(uid: string) {
+  return collection(db as Firestore, 'users', uid, 'diary');
+}
+
 /** Fetch the diary entry for a given date key (YYYY-MM-DD). Returns null if none exists yet. */
-export async function getDiaryEntry(date: string): Promise<DiaryEntry | null> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const req = db.transaction(DIARY_STORE, 'readonly').objectStore(DIARY_STORE).get(date);
-    req.onsuccess = () => resolve((req.result as DiaryEntry) ?? null);
-    req.onerror = () => reject(req.error);
-  });
+export async function getDiaryEntry(uid: string, date: string): Promise<DiaryEntry | null> {
+  const snap = await getDoc(doc(diaryCollection(uid), date));
+  return snap.exists() ? (snap.data() as DiaryEntry) : null;
 }
 
 /** Write (or overwrite) the diary entry for a given date key. */
 export async function saveDiaryEntry(
+  uid: string,
   date: string,
   data: {
     id?: string;
@@ -27,8 +38,7 @@ export async function saveDiaryEntry(
     >;
   },
 ): Promise<void> {
-  // Fetch existing entry to preserve its top-level id if not provided.
-  const existing = await getDiaryEntry(date);
+  const existing = await getDiaryEntry(uid, date);
   const entryId = data.id ?? existing?.id ?? crypto.randomUUID();
   const mealsWithCalories = data.meals.map((m, mi) => {
     const mealId = m.id ?? existing?.meals[mi]?.id ?? crypto.randomUUID();
@@ -46,52 +56,39 @@ export async function saveDiaryEntry(
     if (m.calories == null) return sum;
     return (sum ?? 0) + m.calories;
   }, null);
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const req = db.transaction(DIARY_STORE, 'readwrite').objectStore(DIARY_STORE).put({
-      id: entryId,
-      date,
-      weight: data.weight,
-      meals: mealsWithCalories,
-      calories,
-    });
-    req.onsuccess = () => resolve();
-    req.onerror = () => reject(req.error);
+
+  await setDoc(doc(diaryCollection(uid), date), {
+    id: entryId,
+    date,
+    weight: data.weight,
+    meals: mealsWithCalories,
+    calories,
   });
 }
 
-export function cursorDiary(store: IDBObjectStore, range?: IDBKeyRange): Promise<DiaryEntry[]> {
-  return new Promise((resolve, reject) => {
-    const req = store.openCursor(range);
-    const entries: DiaryEntry[] = [];
-    req.onsuccess = () => {
-      const cursor = req.result;
-      if (cursor) {
-        entries.push(cursor.value as DiaryEntry);
-        cursor.continue();
-      } else {
-        resolve(entries);
-      }
-    };
-    req.onerror = () => reject(req.error);
-  });
-}
-
-export async function getDiaryEntriesForMonth(year: number, month: number): Promise<DiaryEntry[]> {
-  const db = await openDB();
+export async function getDiaryEntriesForMonth(
+  uid: string,
+  year: number,
+  month: number,
+): Promise<DiaryEntry[]> {
   const parsedMonth = String(month).padStart(2, '0');
-  const range = IDBKeyRange.bound(`${year}-${parsedMonth}-01`, `${year}-${parsedMonth}-31`);
-  return cursorDiary(db.transaction(DIARY_STORE, 'readonly').objectStore(DIARY_STORE), range);
+  const start = `${year}-${parsedMonth}-01`;
+  const end = `${year}-${parsedMonth}-31`;
+  const q = query(diaryCollection(uid), where('date', '>=', start), where('date', '<=', end));
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => d.data() as DiaryEntry);
 }
 
-export async function getMonthEntries(year: number, month: number): Promise<DiaryEntryMap> {
-  const entries = await getDiaryEntriesForMonth(year, month);
-
+export async function getMonthEntries(
+  uid: string,
+  year: number,
+  month: number,
+): Promise<DiaryEntryMap> {
+  const entries = await getDiaryEntriesForMonth(uid, year, month);
   const map = new Map<number, DiaryEntry>();
   for (const entry of entries) {
     const day = parseInt(entry.date.split('-')[2], 10);
     map.set(day, entry);
   }
-
   return map;
 }

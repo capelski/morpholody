@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useUid } from '../context/AuthContext';
 import { createIngredient } from '../logic/ingredient';
 import { getAllMealComponents } from '../storage';
 import { type Ingredient } from '../types/Ingredient';
@@ -8,6 +9,7 @@ import './Ingredients.css';
 const PAGE_SIZE = 20;
 
 export default function Ingredients() {
+  const uid = useUid();
   const [all, setAll] = useState<Ingredient[]>([]);
   const [filter, setFilter] = useState('');
   const [page, setPage] = useState(0);
@@ -15,7 +17,7 @@ export default function Ingredients() {
   const [creating, setCreating] = useState(false);
 
   function reload() {
-    getAllMealComponents().then(setAll);
+    getAllMealComponents(uid).then(setAll);
   }
 
   useEffect(() => {
