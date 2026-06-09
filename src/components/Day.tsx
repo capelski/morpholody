@@ -164,8 +164,7 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
         );
         const isLastComp = compIndex === meal.components.length - 1;
         const wasEmpty =
-          meal.components[compIndex].name.trim() === '' &&
-          meal.components[compIndex].units == null;
+          meal.components[compIndex].name.trim() === '' && meal.components[compIndex].units == null;
         const patchedComp = updatedComps[compIndex];
         const hasContent = patchedComp.name.trim() !== '' || patchedComp.units != null;
 

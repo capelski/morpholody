@@ -12,6 +12,14 @@ const DB_VERSION = 12;
 export const DIARY_STORE = 'diary';
 export const INGREDIENTS_STORE = 'ingredients';
 
+function runSequential(steps: Array<(done: () => void) => void>): void {
+  function run(i: number): void {
+    if (i >= steps.length) return;
+    steps[i](() => run(i + 1));
+  }
+  run(0);
+}
+
 let dbPromise: Promise<IDBDatabase> | null = null;
 
 export function openDB(): Promise<IDBDatabase> {
@@ -35,12 +43,14 @@ export function openDB(): Promise<IDBDatabase> {
 
         if (applyVersion3(db, tx, e, reject)) return;
         if (applyVersion4(db, tx, e, reject)) return;
-        applyVersion7(db, tx, e, reject);
-        applyVersion8(db, tx, e, reject);
-        applyVersion9(db, tx, e, reject);
-        applyVersion10(db, tx, e, reject);
-        applyVersion11(db, tx, e, reject);
-        applyVersion12(db, tx, e, reject);
+        runSequential([
+          (done) => applyVersion7(db, tx, e, reject, done),
+          (done) => applyVersion8(db, tx, e, reject, done),
+          (done) => applyVersion9(db, tx, e, reject, done),
+          (done) => applyVersion10(db, tx, e, reject, done),
+          (done) => applyVersion11(db, tx, e, reject, done),
+          (done) => applyVersion12(db, tx, e, reject, done),
+        ]);
       };
 
       req.onsuccess = () => resolve(req.result);

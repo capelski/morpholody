@@ -3,8 +3,12 @@ export function applyVersion9(
   tx: IDBTransaction,
   e: IDBVersionChangeEvent,
   reject: (reason?: unknown) => void,
-): boolean {
-  if (e.oldVersion < 7 || e.oldVersion >= 9) return false;
+  onDone: () => void,
+): void {
+  if (e.oldVersion < 7 || e.oldVersion >= 9) {
+    onDone();
+    return;
+  }
 
   const allRecsReq = tx.objectStore('mealComponents').getAll();
   allRecsReq.onsuccess = () => {
@@ -14,7 +18,7 @@ export function applyVersion9(
     ingStore.createIndex('by_name_lower', 'nameLower');
     ingStore.createIndex('by_name', 'name');
     for (const rec of recs) ingStore.put(rec);
+    onDone();
   };
   allRecsReq.onerror = () => reject(allRecsReq.error);
-  return false;
 }

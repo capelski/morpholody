@@ -3,8 +3,12 @@ export function applyVersion7(
   tx: IDBTransaction,
   e: IDBVersionChangeEvent,
   reject: (reason?: unknown) => void,
-): boolean {
-  if (e.oldVersion >= 7) return false;
+  onDone: () => void,
+): void {
+  if (e.oldVersion >= 7) {
+    onDone();
+    return;
+  }
 
   if (e.oldVersion === 4) {
     const oldStore = tx.objectStore('mealComponents');
@@ -26,7 +30,7 @@ export function applyVersion7(
       if (!rec.nameLower) rec.nameLower = (rec.name as string).toLowerCase();
       newStore.put(rec);
     }
+    onDone();
   };
   allRecsReq.onerror = () => reject(allRecsReq.error);
-  return false;
 }

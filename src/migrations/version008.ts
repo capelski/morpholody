@@ -3,13 +3,20 @@ export function applyVersion8(
   tx: IDBTransaction,
   e: IDBVersionChangeEvent,
   reject: (reason?: unknown) => void,
-): boolean {
-  if (e.oldVersion >= 8) return false;
+  onDone: () => void,
+): void {
+  if (e.oldVersion >= 8) {
+    onDone();
+    return;
+  }
 
   const cursorReq = tx.objectStore('diary').openCursor();
   cursorReq.onsuccess = () => {
     const cursor = cursorReq.result;
-    if (!cursor) return;
+    if (!cursor) {
+      onDone();
+      return;
+    }
     const entry = cursor.value as Record<string, unknown>;
     if (!entry.id) entry.id = crypto.randomUUID();
     for (const meal of (entry.meals ?? []) as Array<Record<string, unknown>>) {
@@ -22,5 +29,4 @@ export function applyVersion8(
     cursor.continue();
   };
   cursorReq.onerror = () => reject(cursorReq.error);
-  return false;
 }

@@ -3,8 +3,12 @@ export function applyVersion12(
   tx: IDBTransaction,
   e: IDBVersionChangeEvent,
   reject: (reason?: unknown) => void,
+  onDone: () => void,
 ): void {
-  if (e.oldVersion < 11) return;
+  if (e.oldVersion < 11) {
+    onDone();
+    return;
+  }
 
   const allIngredientsReq = tx.objectStore('ingredients').getAll();
   allIngredientsReq.onsuccess = () => {
@@ -16,7 +20,10 @@ export function applyVersion12(
     const cursorReq = tx.objectStore('diary').openCursor();
     cursorReq.onsuccess = () => {
       const cursor = cursorReq.result;
-      if (!cursor) return;
+      if (!cursor) {
+        onDone();
+        return;
+      }
       const entry = cursor.value as Record<string, unknown>;
       let changed = false;
       for (const meal of (entry.meals ?? []) as Array<Record<string, unknown>>) {

@@ -3,13 +3,20 @@ export function applyVersion11(
   tx: IDBTransaction,
   e: IDBVersionChangeEvent,
   reject: (reason?: unknown) => void,
+  onDone: () => void,
 ): void {
-  if (e.oldVersion < 10) return;
+  if (e.oldVersion < 10) {
+    onDone();
+    return;
+  }
 
   const cursorReq = tx.objectStore('diary').openCursor();
   cursorReq.onsuccess = () => {
     const cursor = cursorReq.result;
-    if (!cursor) return;
+    if (!cursor) {
+      onDone();
+      return;
+    }
     const entry = cursor.value as Record<string, unknown>;
     let changed = false;
     for (const meal of (entry.meals ?? []) as Array<Record<string, unknown>>) {
