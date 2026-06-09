@@ -5,8 +5,8 @@ import {
   getDiaryEntry,
   getMealComponentById,
   getMealComponentSuggestions,
+  Ingredient,
   saveDiaryEntry,
-  saveMealComponent,
 } from '../storage';
 import './Day.css';
 import IngredientDialog from './IngredientDialog';
@@ -239,15 +239,14 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
     setSavingComponent({ name, mi, ci });
   }
 
-  async function handleSaveMealComponent(name: string, caloriesPerUnit: number, units: string) {
-    const ingredientId = await saveMealComponent(name, caloriesPerUnit, units);
+  async function handleIngredientSaved(ingredient: Ingredient) {
     if (savingComponent) {
       const qty = meals[savingComponent.mi].components[savingComponent.ci].quantity;
-      const calories = qty != null ? Math.round(caloriesPerUnit * qty) : null;
+      const calories = qty != null ? Math.round(ingredient.caloriesPerUnit * qty) : null;
       updateComponent(savingComponent.mi, savingComponent.ci, {
-        caloriesPerUnit,
+        caloriesPerUnit: ingredient.caloriesPerUnit,
         calories,
-        ingredientId,
+        ingredientId: ingredient.id,
       });
     }
     setSavingComponent(null);
@@ -621,7 +620,7 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
       {savingComponent !== null && (
         <IngredientDialog
           ingredient={createIngredient(savingComponent.name)}
-          onSave={handleSaveMealComponent}
+          onSaved={handleIngredientSaved}
           onCancel={() => setSavingComponent(null)}
         />
       )}

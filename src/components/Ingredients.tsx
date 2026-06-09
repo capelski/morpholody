@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { createIngredient } from '../logic/ingredient';
-import { getAllMealComponents, saveMealComponent } from '../storage';
+import { getAllMealComponents } from '../storage';
 import { type Ingredient } from '../types/Ingredient';
 import IngredientDialog from './IngredientDialog';
 import './Ingredients.css';
@@ -22,8 +22,7 @@ export default function Ingredients() {
     reload();
   }, []);
 
-  async function handleSave(name: string, caloriesPerUnit: number, units: string, id?: string) {
-    await saveMealComponent(name, caloriesPerUnit, units, id);
+  async function handleSaved() {
     setEditing(null);
     setCreating(false);
     reload();
@@ -114,7 +113,7 @@ export default function Ingredients() {
       {creating && (
         <IngredientDialog
           ingredient={createIngredient('')}
-          onSave={handleSave}
+          onSaved={handleSaved}
           onCancel={() => setCreating(false)}
         />
       )}
@@ -122,7 +121,7 @@ export default function Ingredients() {
         <IngredientDialog
           ingredient={editing}
           title="Edit meal component"
-          onSave={handleSave}
+          onSaved={handleSaved}
           onCancel={() => setEditing(null)}
         />
       )}

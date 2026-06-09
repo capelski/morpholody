@@ -54,6 +54,19 @@ export async function getMealComponentById(id: string): Promise<Ingredient | und
   });
 }
 
+export async function getMealComponentByName(name: string): Promise<Ingredient | undefined> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const req = db
+      .transaction(INGREDIENTS_STORE, 'readonly')
+      .objectStore(INGREDIENTS_STORE)
+      .index('by_name')
+      .get(name);
+    req.onsuccess = () => resolve(req.result as Ingredient | undefined);
+    req.onerror = () => reject(req.error);
+  });
+}
+
 /** Return all meal components sorted by name (case-insensitive). */
 export async function getAllMealComponents(): Promise<Ingredient[]> {
   const db = await openDB();
@@ -68,53 +81,24 @@ export async function getAllMealComponents(): Promise<Ingredient[]> {
   });
 }
 
-/** Upsert a meal component into the mealComponents store. Returns the component's id. */
-export async function saveMealComponent(
-  name: string,
-  caloriesPerUnit: number,
-  units?: string,
-  id?: string,
-): Promise<string> {
+/** Upsert a meal component into the mealComponents store */
+export async function upsertIngredient(ingredient: Ingredient): Promise<void> {
   const db = await openDB();
-  let resolvedId = id;
-  if (!resolvedId) {
-    // Look up any existing record by name to preserve its id.
-    const existing = await new Promise<{ id?: string } | undefined>((res, rej) => {
-      const r = db
-        .transaction(INGREDIENTS_STORE, 'readonly')
-        .objectStore(INGREDIENTS_STORE)
-        .index('by_name')
-        .get(name);
-      r.onsuccess = () => res(r.result as { id?: string } | undefined);
-      r.onerror = () => rej(r.error);
-    });
-    resolvedId = existing?.id ?? crypto.randomUUID();
-  }
-  const doc: Record<string, unknown> = {
-    id: resolvedId,
-    name,
-    nameLower: name.toLowerCase(),
-    caloriesPerUnit,
-  };
-  if (units && units.trim()) doc.units = units.trim();
+
   await new Promise<void>((resolve, reject) => {
     const tx = db.transaction(INGREDIENTS_STORE, 'readwrite');
-    const req = tx.objectStore(INGREDIENTS_STORE).put(doc);
+    const req = tx.objectStore(INGREDIENTS_STORE).put(ingredient);
     req.onsuccess = () => resolve();
     req.onerror = () => reject(req.error);
   });
 
-  await propagateMealComponentUpdate(db, resolvedId, name, caloriesPerUnit);
-
-  return resolvedId;
+  await propagateMealComponentUpdate(db, ingredient);
 }
 
 /** Update all diary entries that contain components linked to the given meal component id. */
 async function propagateMealComponentUpdate(
   db: IDBDatabase,
-  ingredientId: string,
-  name: string,
-  caloriesPerUnit: number,
+  ingredient: Ingredient,
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     const tx = db.transaction(DIARY_STORE, 'readwrite');
@@ -130,10 +114,10 @@ async function propagateMealComponentUpdate(
       let changed = false;
       for (const meal of entry.meals) {
         for (const comp of meal.components ?? []) {
-          if (comp.ingredientId === ingredientId) {
-            comp.name = name;
+          if (comp.ingredientId === ingredient.id) {
+            comp.name = ingredient.name;
             if (comp.quantity != null) {
-              comp.calories = Math.round(caloriesPerUnit * comp.quantity);
+              comp.calories = Math.round((ingredient.caloriesPerUnit ?? 0) * comp.quantity);
             }
             changed = true;
           }

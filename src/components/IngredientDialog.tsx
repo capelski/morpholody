@@ -1,18 +1,19 @@
 import { useEffect, useState } from 'react';
+import { updateIngredient } from '../logic/ingredient';
 import { Ingredient } from '../types/Ingredient';
 import './IngredientDialog.css';
 
 interface IngredientDialogProps {
-  ingredient?: Ingredient;
+  ingredient: Ingredient;
   title?: string;
-  onSave: (name: string, caloriesPerUnit: number, units: string, id?: string) => void;
+  onSaved: (ingredient: Ingredient) => void;
   onCancel: () => void;
 }
 
 export default function IngredientDialog({
   ingredient,
   title = 'New meal component',
-  onSave,
+  onSaved,
   onCancel,
 }: IngredientDialogProps) {
   const [name, setName] = useState(ingredient?.name ?? '');
@@ -20,6 +21,7 @@ export default function IngredientDialog({
     ingredient?.caloriesPerUnit ? String(ingredient.caloriesPerUnit) : '',
   );
   const [units, setUnits] = useState(ingredient?.units ?? '');
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -29,14 +31,33 @@ export default function IngredientDialog({
     return () => document.removeEventListener('keydown', onKey);
   }, [onCancel]);
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const cal = parseFloat(calStr);
-    if (!name.trim() || isNaN(cal) || cal <= 0) return;
-    onSave(name.trim(), cal, units, ingredient?.id);
-  }
+  const isValid = name.trim() !== '' && parseFloat(calStr) > 0;
 
-  const valid = name.trim() !== '' && parseFloat(calStr) > 0;
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+
+    if (isValid) {
+      const cal = parseFloat(calStr);
+      const trimmedName = name.trim();
+
+      const updatedIngredient: Ingredient = {
+        ...ingredient,
+        name: trimmedName,
+        nameLower: trimmedName.toLowerCase(),
+        caloriesPerUnit: cal,
+        units: units.trim(),
+      };
+
+      try {
+        await updateIngredient(updatedIngredient);
+        onSaved(updatedIngredient);
+      } catch (err) {
+        setErrorMessage(
+          err instanceof Error ? err.message : 'An error occurred while saving the ingredient',
+        );
+      }
+    }
+  }
 
   return (
     <div className="mcd-overlay" onPointerDown={onCancel}>
@@ -96,11 +117,12 @@ export default function IngredientDialog({
               <span className="mcd-input-unit">kcal</span>
             </div>
           </div>
+          {errorMessage && <div className="mcd-error">{errorMessage}</div>}
           <div className="mcd-actions">
             <button type="button" className="mcd-btn-cancel" onClick={onCancel}>
               Cancel
             </button>
-            <button type="submit" className="mcd-btn-save" disabled={!valid}>
+            <button type="submit" className="mcd-btn-save" disabled={!isValid}>
               Save
             </button>
           </div>
