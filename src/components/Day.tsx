@@ -80,22 +80,18 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
   const [weightStr, setWeightStr] = useState('');
   const [meals, setMeals] = useState<MealEntry[]>([ghostMeal()]);
   const [editingMeals, setEditingMeals] = useState(false);
-  const [nameSuggestions, setNameSuggestions] = useState<{
-    mi: number;
-    ci: number;
-    items: {
-      id: string;
-      name: string;
-      caloriesPerUnit: number;
-      unitsLabel?: string;
-    }[];
+  const [ingredientSuggestions, setIngredientSuggestions] = useState<{
+    mealIndex: number;
+    componentIndex: number;
+    items: Ingredient[];
     active: number;
     hasExactMatch: boolean;
   } | null>(null);
-  const [savingComponent, setSavingComponent] = useState<{
+
+  const [savingIngredient, setSavingIngredient] = useState<{
     name: string;
-    mi: number;
-    ci: number;
+    mealIndex: number;
+    componentIndex: number;
   } | null>(null);
   const weightRef = useRef<HTMLInputElement>(null);
 
@@ -114,19 +110,21 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
               ? [
                   ...(await Promise.all(
                     m.components.map(async (c) => {
-                      let caloriesPerUnit: number | null = null;
-                      if (c.ingredientId) {
-                        const mc = await getMealComponentById(c.ingredientId);
-                        caloriesPerUnit = mc?.caloriesPerUnit ?? null;
-                      }
-                      return {
+                      const component: ComponentEntry = {
                         id: c.id ?? null,
                         name: c.name,
                         units: c.ingredientId ? c.units : null,
                         calories: c.calories ?? null,
-                        caloriesPerUnit,
                         ingredientId: c.ingredientId ?? null,
+                        caloriesPerUnit: null,
                       };
+
+                      if (c.ingredientId) {
+                        const mc = await getMealComponentById(c.ingredientId);
+                        component.caloriesPerUnit = mc?.caloriesPerUnit ?? null;
+                        component.unitsLabel = mc?.unitsLabel;
+                      }
+                      return component;
                     }),
                   )),
                   ghostComponent(),
@@ -155,17 +153,22 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
     setMeals((prev) => prev.map((m, i) => (i === mealIndex ? { ...m, time } : m)));
   }
 
-  function updateComponent(mealIndex: number, compIndex: number, patch: Partial<ComponentEntry>) {
+  function updateComponent(
+    mealIndex: number,
+    componentIndex: number,
+    patch: Partial<ComponentEntry>,
+  ) {
     setMeals((prev) => {
       const updated = prev.map((meal, mi) => {
         if (mi !== mealIndex) return meal;
         const updatedComps = meal.components.map((c, ci) =>
-          ci === compIndex ? { ...c, ...patch } : c,
+          ci === componentIndex ? { ...c, ...patch } : c,
         );
-        const isLastComp = compIndex === meal.components.length - 1;
+        const isLastComp = componentIndex === meal.components.length - 1;
         const wasEmpty =
-          meal.components[compIndex].name.trim() === '' && meal.components[compIndex].units == null;
-        const patchedComp = updatedComps[compIndex];
+          meal.components[componentIndex].name.trim() === '' &&
+          meal.components[componentIndex].units == null;
+        const patchedComp = updatedComps[componentIndex];
         const hasContent = patchedComp.name.trim() !== '' || patchedComp.units != null;
 
         const newComps =
@@ -184,11 +187,11 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
     });
   }
 
-  function removeComponent(mealIndex: number, compIndex: number) {
+  function removeComponent(mealIndex: number, componentIndex: number) {
     setMeals((prev) =>
       prev.map((meal, mi) => {
         if (mi !== mealIndex) return meal;
-        const filtered = meal.components.filter((_, ci) => ci !== compIndex);
+        const filtered = meal.components.filter((_, ci) => ci !== componentIndex);
         return {
           ...meal,
           components: filtered.length > 0 ? filtered : [ghostComponent()],
@@ -201,54 +204,56 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
     setMeals((prev) => prev.filter((_, i) => i !== mealIndex));
   }
 
-  async function handleNameChange(mi: number, ci: number, value: string) {
-    updateComponent(mi, ci, { name: value });
+  async function handleNameChange(mealIndex: number, componentIndex: number, value: string) {
+    updateComponent(mealIndex, componentIndex, { name: value });
     const trimmed = value.trim();
     if (trimmed.length > 0) {
       const items = await getMealComponentSuggestions(trimmed);
       const hasExactMatch = items.some((item) => item.name.toLowerCase() === trimmed.toLowerCase());
-      setNameSuggestions({ mi, ci, items, active: -1, hasExactMatch });
+      setIngredientSuggestions({
+        mealIndex,
+        componentIndex,
+        items,
+        active: -1,
+        hasExactMatch,
+      });
     } else {
-      setNameSuggestions(null);
+      setIngredientSuggestions(null);
     }
   }
 
-  function selectSuggestion(suggestion: {
-    id: string;
-    name: string;
-    caloriesPerUnit: number;
-    unitsLabel?: string;
-  }) {
-    if (!nameSuggestions) return;
-    const { mi, ci } = nameSuggestions;
-    const qty = meals[mi].components[ci].units;
-    const calories = qty != null ? Math.round(suggestion.caloriesPerUnit * qty) : null;
-    updateComponent(mi, ci, {
-      name: suggestion.name,
-      caloriesPerUnit: suggestion.caloriesPerUnit,
+  function selectSuggestion(ingredient: Ingredient) {
+    if (!ingredientSuggestions) return;
+    const { mealIndex, componentIndex } = ingredientSuggestions;
+    const qty = meals[mealIndex].components[componentIndex].units;
+    const calories = qty != null ? Math.round(ingredient.caloriesPerUnit * qty) : null;
+    updateComponent(mealIndex, componentIndex, {
+      name: ingredient.name,
+      caloriesPerUnit: ingredient.caloriesPerUnit,
       calories,
-      unitsLabel: suggestion.unitsLabel,
-      ingredientId: suggestion.id,
+      unitsLabel: ingredient.unitsLabel,
+      ingredientId: ingredient.id,
     });
-    setNameSuggestions(null);
+    setIngredientSuggestions(null);
   }
 
-  function saveAndSelectNew(name: string, mi: number, ci: number) {
-    setNameSuggestions(null);
-    setSavingComponent({ name, mi, ci });
+  function saveAndSelectNew(name: string, mealIndex: number, componentIndex: number) {
+    setSavingIngredient({ name, mealIndex, componentIndex });
+    setIngredientSuggestions(null);
   }
 
   async function handleIngredientSaved(ingredient: Ingredient) {
-    if (savingComponent) {
-      const qty = meals[savingComponent.mi].components[savingComponent.ci].units;
+    if (savingIngredient) {
+      const qty =
+        meals[savingIngredient.mealIndex].components[savingIngredient.componentIndex].units;
       const calories = qty != null ? Math.round(ingredient.caloriesPerUnit * qty) : null;
-      updateComponent(savingComponent.mi, savingComponent.ci, {
+      updateComponent(savingIngredient.mealIndex, savingIngredient.componentIndex, {
         caloriesPerUnit: ingredient.caloriesPerUnit,
         calories,
         ingredientId: ingredient.id,
       });
     }
-    setSavingComponent(null);
+    setSavingIngredient(null);
   }
 
   function handleQuantityChange(mi: number, ci: number, value: string) {
@@ -262,34 +267,43 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
   }
 
   function handleNameKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (!nameSuggestions) return;
-    const addIdx = nameSuggestions.hasExactMatch ? -1 : nameSuggestions.items.length;
-    const lastIdx = nameSuggestions.items.length - 1 + (nameSuggestions.hasExactMatch ? 0 : 1);
+    if (!ingredientSuggestions) return;
+    const addIdx = ingredientSuggestions.hasExactMatch ? -1 : ingredientSuggestions.items.length;
+    const lastIdx =
+      ingredientSuggestions.items.length - 1 + (ingredientSuggestions.hasExactMatch ? 0 : 1);
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setNameSuggestions((prev) =>
+      setIngredientSuggestions((prev) =>
         prev ? { ...prev, active: Math.min(prev.active + 1, lastIdx) } : prev,
       );
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      setNameSuggestions((prev) =>
+      setIngredientSuggestions((prev) =>
         prev ? { ...prev, active: Math.max(prev.active - 1, -1) } : prev,
       );
-    } else if (e.key === 'Enter' && nameSuggestions.active >= 0) {
+    } else if (e.key === 'Enter' && ingredientSuggestions.active >= 0) {
       e.preventDefault();
-      if (nameSuggestions.active === addIdx) {
-        const name = meals[nameSuggestions.mi].components[nameSuggestions.ci].name.trim();
-        if (name) saveAndSelectNew(name, nameSuggestions.mi, nameSuggestions.ci);
+      if (ingredientSuggestions.active === addIdx) {
+        const name =
+          meals[ingredientSuggestions.mealIndex].components[
+            ingredientSuggestions.componentIndex
+          ].name.trim();
+        if (name)
+          saveAndSelectNew(
+            name,
+            ingredientSuggestions.mealIndex,
+            ingredientSuggestions.componentIndex,
+          );
       } else {
-        selectSuggestion(nameSuggestions.items[nameSuggestions.active]);
+        selectSuggestion(ingredientSuggestions.items[ingredientSuggestions.active]);
       }
     } else if (e.key === 'Escape') {
-      setNameSuggestions(null);
+      setIngredientSuggestions(null);
     }
   }
 
   function handleNameBlur() {
-    setTimeout(() => setNameSuggestions(null), 120);
+    setTimeout(() => setIngredientSuggestions(null), 120);
   }
 
   async function handleSave(e: React.FormEvent) {
@@ -494,7 +508,8 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
                                     aria-label="Component name"
                                     aria-autocomplete="list"
                                     aria-expanded={
-                                      nameSuggestions?.mi === mi && nameSuggestions?.ci === ci
+                                      ingredientSuggestions?.mealIndex === mi &&
+                                      ingredientSuggestions?.componentIndex === ci
                                     }
                                   />
                                 ) : (
@@ -512,27 +527,28 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
                                   </span>
                                 )}
                                 {editingMeals &&
-                                  nameSuggestions?.mi === mi &&
-                                  nameSuggestions?.ci === ci && (
+                                  ingredientSuggestions?.mealIndex === mi &&
+                                  ingredientSuggestions?.componentIndex === ci && (
                                     <ul className="day-component-suggestions" role="listbox">
-                                      {nameSuggestions.items.map((item, idx) => (
+                                      {ingredientSuggestions.items.map((item, idx) => (
                                         <li
                                           key={item.name}
                                           role="option"
-                                          aria-selected={idx === nameSuggestions.active}
-                                          className={`day-component-suggestion${idx === nameSuggestions.active ? ' day-component-suggestion--active' : ''}`}
+                                          aria-selected={idx === ingredientSuggestions.active}
+                                          className={`day-component-suggestion${idx === ingredientSuggestions.active ? ' day-component-suggestion--active' : ''}`}
                                           onMouseDown={() => selectSuggestion(item)}
                                         >
                                           {item.name}
                                         </li>
                                       ))}
-                                      {!nameSuggestions.hasExactMatch && (
+                                      {!ingredientSuggestions.hasExactMatch && (
                                         <li
                                           role="option"
                                           aria-selected={
-                                            nameSuggestions.active === nameSuggestions.items.length
+                                            ingredientSuggestions.active ===
+                                            ingredientSuggestions.items.length
                                           }
-                                          className={`day-component-suggestion day-component-suggestion--save${nameSuggestions.active === nameSuggestions.items.length ? ' day-component-suggestion--active' : ''}`}
+                                          className={`day-component-suggestion day-component-suggestion--save${ingredientSuggestions.active === ingredientSuggestions.items.length ? ' day-component-suggestion--active' : ''}`}
                                           onMouseDown={() =>
                                             saveAndSelectNew(comp.name.trim(), mi, ci)
                                           }
@@ -616,11 +632,11 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
           </form>
         </div>
       </div>
-      {savingComponent !== null && (
+      {savingIngredient !== null && (
         <IngredientDialog
-          ingredient={createIngredient(savingComponent.name)}
+          ingredient={createIngredient(savingIngredient.name)}
           onSaved={handleIngredientSaved}
-          onCancel={() => setSavingComponent(null)}
+          onCancel={() => setSavingIngredient(null)}
         />
       )}
     </>
