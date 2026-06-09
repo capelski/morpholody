@@ -37,15 +37,13 @@ export default function IngredientDialog({
     e.preventDefault();
 
     if (isValid) {
-      const cal = parseFloat(calStr);
-      const trimmedName = name.trim();
+      const caloriesPerUnit = parseFloat(calStr);
 
       const updatedIngredient: Ingredient = {
         ...ingredient,
-        name: trimmedName,
-        nameLower: trimmedName.toLowerCase(),
-        caloriesPerUnit: cal,
-        unitsLabel: unitsLabel.trim(),
+        name,
+        caloriesPerUnit,
+        unitsLabel,
       };
 
       try {

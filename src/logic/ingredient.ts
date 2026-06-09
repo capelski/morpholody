@@ -14,5 +14,11 @@ export const updateIngredient = async (ingredient: Ingredient): Promise<void> =>
     throw new Error('An ingredient with this name already exists');
   }
 
+  ingredient.name = ingredient.name.trim();
+  ingredient.nameLower = ingredient.name.toLowerCase();
+  if (ingredient.unitsLabel) {
+    ingredient.unitsLabel = ingredient.unitsLabel.trim();
+  }
+
   await upsertIngredient(ingredient);
 };
