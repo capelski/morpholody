@@ -116,8 +116,8 @@ async function propagateMealComponentUpdate(
         for (const comp of meal.components ?? []) {
           if (comp.ingredientId === ingredient.id) {
             comp.name = ingredient.name;
-            if (comp.quantity != null) {
-              comp.calories = Math.round((ingredient.caloriesPerUnit ?? 0) * comp.quantity);
+            if (comp.units != null) {
+              comp.calories = Math.round((ingredient.caloriesPerUnit ?? 0) * comp.units);
             }
             changed = true;
           }

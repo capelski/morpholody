@@ -8,8 +8,8 @@ export type MealComponent = {
       ingredientId?: null;
       name: string;
     }
-  | (Pick<Ingredient, 'caloriesPerUnit' | 'name' | 'units'> & {
-      quantity: number | null;
+  | (Pick<Ingredient, 'caloriesPerUnit' | 'name' | 'unitsLabel'> & {
+      units: number | null;
       ingredientId: string;
     })
 );

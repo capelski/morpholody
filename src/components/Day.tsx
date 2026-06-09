@@ -14,7 +14,7 @@ import IngredientDialog from './IngredientDialog';
 interface ComponentEntry {
   id: string | null;
   name: string;
-  quantity: number | null;
+  units: number | null;
   calories: number | null;
   caloriesPerUnit: number | null;
   unitsLabel?: string;
@@ -59,7 +59,7 @@ function ghostComponent(): ComponentEntry {
   return {
     id: null,
     name: '',
-    quantity: null,
+    units: null,
     calories: null,
     caloriesPerUnit: null,
     ingredientId: null,
@@ -73,7 +73,7 @@ function ghostMeal(afterTime?: string): MealEntry {
 }
 
 function isMealEmpty(meal: MealEntry): boolean {
-  return meal.components.every((c) => c.name.trim() === '' && c.quantity == null);
+  return meal.components.every((c) => c.name.trim() === '' && c.units == null);
 }
 
 export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) {
@@ -122,7 +122,7 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
                       return {
                         id: c.id ?? null,
                         name: c.name,
-                        quantity: c.ingredientId ? c.quantity : null,
+                        units: c.ingredientId ? c.units : null,
                         calories: c.calories ?? null,
                         caloriesPerUnit,
                         ingredientId: c.ingredientId ?? null,
@@ -165,9 +165,9 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
         const isLastComp = compIndex === meal.components.length - 1;
         const wasEmpty =
           meal.components[compIndex].name.trim() === '' &&
-          meal.components[compIndex].quantity == null;
+          meal.components[compIndex].units == null;
         const patchedComp = updatedComps[compIndex];
-        const hasContent = patchedComp.name.trim() !== '' || patchedComp.quantity != null;
+        const hasContent = patchedComp.name.trim() !== '' || patchedComp.units != null;
 
         const newComps =
           isLastComp && wasEmpty && hasContent ? [...updatedComps, ghostComponent()] : updatedComps;
@@ -222,7 +222,7 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
   }) {
     if (!nameSuggestions) return;
     const { mi, ci } = nameSuggestions;
-    const qty = meals[mi].components[ci].quantity;
+    const qty = meals[mi].components[ci].units;
     const calories = qty != null ? Math.round(suggestion.caloriesPerUnit * qty) : null;
     updateComponent(mi, ci, {
       name: suggestion.name,
@@ -241,7 +241,7 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
 
   async function handleIngredientSaved(ingredient: Ingredient) {
     if (savingComponent) {
-      const qty = meals[savingComponent.mi].components[savingComponent.ci].quantity;
+      const qty = meals[savingComponent.mi].components[savingComponent.ci].units;
       const calories = qty != null ? Math.round(ingredient.caloriesPerUnit * qty) : null;
       updateComponent(savingComponent.mi, savingComponent.ci, {
         caloriesPerUnit: ingredient.caloriesPerUnit,
@@ -253,11 +253,11 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
   }
 
   function handleQuantityChange(mi: number, ci: number, value: string) {
-    const quantity = parseQty(value);
+    const units = parseQty(value);
     const cpu = meals[mi].components[ci].caloriesPerUnit;
-    const patch: Partial<ComponentEntry> = { quantity };
+    const patch: Partial<ComponentEntry> = { units };
     if (cpu != null) {
-      patch.calories = quantity != null ? Math.round(cpu * quantity) : null;
+      patch.calories = units != null ? Math.round(cpu * units) : null;
     }
     updateComponent(mi, ci, patch);
   }
@@ -303,7 +303,7 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
         id: m.id ?? crypto.randomUUID(),
         time: m.time,
         components: m.components
-          .filter((c) => c.name.trim() !== '' || c.quantity != null)
+          .filter((c) => c.name.trim() !== '' || c.units != null)
           .map((c) => {
             const id = c.id ?? crypto.randomUUID();
             if (c.ingredientId) {
@@ -311,7 +311,7 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
                 id,
                 name: c.name,
                 calories: c.calories,
-                quantity: c.quantity,
+                units: c.units,
                 ingredientId: c.ingredientId,
                 caloriesPerUnit: c.caloriesPerUnit ?? 0,
                 ...(c.unitsLabel ? { unitsLabel: c.unitsLabel } : {}),
@@ -321,7 +321,7 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
               id,
               name: c.name,
               calories: c.calories,
-              quantity: c.quantity,
+              units: c.units,
             };
           }),
       }))
@@ -552,13 +552,13 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
                                     placeholder={comp.unitsLabel ?? 'Qty'}
                                     min="0"
                                     step="any"
-                                    value={comp.quantity != null ? String(comp.quantity) : ''}
+                                    value={comp.units != null ? String(comp.units) : ''}
                                     onChange={(e) => handleQuantityChange(mi, ci, e.target.value)}
                                     aria-label="Quantity"
                                   />
                                 ) : (
                                   <span className="day-meal-field day-meal-field--read day-component-field--qty">
-                                    {comp.quantity != null ? String(comp.quantity) : ''}
+                                    {comp.units != null ? String(comp.units) : ''}
                                   </span>
                                 ))}
                               {editingMeals ? (
