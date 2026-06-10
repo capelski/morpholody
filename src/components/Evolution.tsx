@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useUid } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext';
 import MonthSelector from './MonthSelector';
 import {
   LineChart,
@@ -83,13 +83,18 @@ interface EvolutionProps {
 }
 
 export default function Evolution({ viewYear, viewMonth, onMonthChange }: EvolutionProps) {
-  const uid = useUid();
+  const { user } = useAuth();
+  const uid = user?.uid ?? null;
   const month = viewMonth + 1; // storage uses 1-indexed months
 
   const [data, setData] = useState<ChartPoint[]>([]);
   const [shiftCalories, setShiftCalories] = useState(false);
 
   useEffect(() => {
+    if (!uid) {
+      setData([]);
+      return;
+    }
     getDiaryEntriesForMonth(uid, viewYear, month).then((entries) => {
       const daysInMonth = new Date(viewYear, month, 0).getDate();
       const weightMap = new Map(entries.map((e) => [e.date, e.weight]));
@@ -107,7 +112,7 @@ export default function Evolution({ viewYear, viewMonth, onMonthChange }: Evolut
         }),
       );
     });
-  }, [viewYear, month]);
+  }, [uid, viewYear, month]);
 
   const chartData = shiftCalories
     ? data.map((point, i) => ({

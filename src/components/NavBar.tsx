@@ -4,10 +4,11 @@ import { type View } from '../types/View';
 interface NavBarProps {
   active: View;
   onChange: (view: View) => void;
+  onSignIn?: () => void;
   onSignOut?: () => void;
 }
 
-export default function NavBar({ active, onChange, onSignOut }: NavBarProps) {
+export default function NavBar({ active, onChange, onSignIn, onSignOut }: NavBarProps) {
   return (
     <nav className="navbar">
       <div className="navbar-tabs">
@@ -33,6 +34,11 @@ export default function NavBar({ active, onChange, onSignOut }: NavBarProps) {
           Components
         </button>
       </div>
+      {onSignIn && (
+        <button className="navbar-signout" onClick={onSignIn} aria-label="Sign in">
+          Sign in
+        </button>
+      )}
       {onSignOut && (
         <button className="navbar-signout" onClick={onSignOut} aria-label="Sign out">
           Sign out

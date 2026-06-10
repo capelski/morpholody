@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { useUid } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext';
+import { useLoginPrompt } from '../context/LoginPromptContext';
 import { toDateKey } from '../logic/date';
 import { createIngredient } from '../logic/ingredient';
 import {
@@ -78,7 +79,9 @@ function isMealEmpty(meal: MealEntry): boolean {
 }
 
 export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) {
-  const uid = useUid();
+  const { user } = useAuth();
+  const uid = user?.uid ?? null;
+  const requestLogin = useLoginPrompt();
   const [weightStr, setWeightStr] = useState('');
   const [meals, setMeals] = useState<MealEntry[]>([ghostMeal()]);
   const [editingMeals, setEditingMeals] = useState(false);
@@ -101,6 +104,7 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
     setWeightStr('');
     setMeals([ghostMeal()]);
     setEditingMeals(false);
+    if (!uid) return;
     getDiaryEntry(uid, toDateKey(date)).then(async (entry) => {
       setWeightStr(entry?.weight != null ? String(entry.weight) : '');
       const loadedMeals = await Promise.all(
@@ -208,6 +212,7 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
 
   async function handleNameChange(mealIndex: number, componentIndex: number, value: string) {
     updateComponent(mealIndex, componentIndex, { name: value });
+    if (!uid) return;
     const trimmed = value.trim();
     if (trimmed.length > 0) {
       const items = await getMealComponentSuggestions(uid, trimmed);
@@ -240,6 +245,10 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
   }
 
   function saveAndSelectNew(name: string, mealIndex: number, componentIndex: number) {
+    if (!uid) {
+      requestLogin();
+      return;
+    }
     setSavingIngredient({ name, mealIndex, componentIndex });
     setIngredientSuggestions(null);
   }
@@ -310,6 +319,10 @@ export default function Day({ date, onClose, onSaved, onDateChange }: DayProps) 
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
+    if (!uid) {
+      requestLogin();
+      return;
+    }
     const value = parseFloat(weightStr);
     const weight = !isNaN(value) && value > 0 ? value : null;
     const mealsToSave = meals

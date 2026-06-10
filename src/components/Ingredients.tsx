@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useUid } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext';
+import { useLoginPrompt } from '../context/LoginPromptContext';
 import { createIngredient } from '../logic/ingredient';
 import { getAllMealComponents } from '../storage';
 import { type Ingredient } from '../types/Ingredient';
@@ -9,25 +10,28 @@ import './Ingredients.css';
 const PAGE_SIZE = 20;
 
 export default function Ingredients() {
-  const uid = useUid();
+  const { user } = useAuth();
+  const uid = user?.uid ?? null;
+  const requestLogin = useLoginPrompt();
   const [all, setAll] = useState<Ingredient[]>([]);
   const [filter, setFilter] = useState('');
   const [page, setPage] = useState(0);
   const [editing, setEditing] = useState<Ingredient | null>(null);
   const [creating, setCreating] = useState(false);
 
-  function reload() {
-    getAllMealComponents(uid).then(setAll);
-  }
-
   useEffect(() => {
-    reload();
-  }, []);
+    if (!uid) {
+      setAll([]);
+      return;
+    }
+    getAllMealComponents(uid).then(setAll);
+  }, [uid]);
 
   async function handleSaved() {
     setEditing(null);
     setCreating(false);
-    reload();
+    if (!uid) return;
+    getAllMealComponents(uid).then(setAll);
   }
 
   const filtered = filter.trim()
@@ -53,7 +57,16 @@ export default function Ingredients() {
           value={filter}
           onChange={(e) => handleFilterChange(e.target.value)}
         />
-        <button className="components-new-btn" onClick={() => setCreating(true)}>
+        <button
+          className="components-new-btn"
+          onClick={() => {
+            if (!uid) {
+              requestLogin();
+              return;
+            }
+            setCreating(true);
+          }}
+        >
           + New
         </button>
       </div>
@@ -80,7 +93,13 @@ export default function Ingredients() {
                   <td className="components-cell-action">
                     <button
                       className="components-edit-btn"
-                      onClick={() => setEditing(c)}
+                      onClick={() => {
+                        if (!uid) {
+                          requestLogin();
+                          return;
+                        }
+                        setEditing(c);
+                      }}
                       aria-label={`Edit ${c.name}`}
                     >
                       Edit
