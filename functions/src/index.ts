@@ -1,280 +1,249 @@
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp';
-import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp';
+import Anthropic from '@anthropic-ai/sdk';
+import cors from 'cors';
+import express from 'express';
 import { initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
-import { onRequest } from 'firebase-functions/v2/https';
-import { z } from 'zod';
-import type { DiaryEntry, Ingredient } from './types.js';
+import { onRequest } from 'firebase-functions/https';
 
 // Firebase automatically authenticates when deployed to Cloud Function;
 // there is no need to provide credentials in code or environment variables
 initializeApp();
 
-const adminAuth = getAuth();
+const auth = getAuth();
 const db = getFirestore();
 
 // ---------------------------------------------------------------------------
-// Auth helper
+// Anthropic client
 // ---------------------------------------------------------------------------
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-async function verifyToken(authHeader: string | undefined): Promise<string> {
-  if (!authHeader?.startsWith('Bearer ')) {
-    throw new Error('Missing or malformed Authorization header');
-  }
-  const token = authHeader.slice(7);
-  const decoded = await adminAuth.verifyIdToken(token);
-  return decoded.uid;
+// ---------------------------------------------------------------------------
+// Firestore helpers (read-only — the MCP server never writes)
+// ---------------------------------------------------------------------------
+async function getDiaryEntries(uid: string, startDate: string, endDate: string) {
+  const snap = await db
+    .collection('users')
+    .doc(uid)
+    .collection('diary')
+    .where('date', '>=', startDate)
+    .where('date', '<=', endDate)
+    .get();
+  return snap.docs.map((d) => d.data());
+}
+
+async function getDiaryEntry(uid: string, date: string) {
+  const snap = await db.collection('users').doc(uid).collection('diary').doc(date).get();
+  return snap.exists ? snap.data() : null;
+}
+
+async function getIngredients(uid: string) {
+  const snap = await db
+    .collection('users')
+    .doc(uid)
+    .collection('ingredients')
+    .orderBy('nameLower')
+    .get();
+  return snap.docs.map((d) => d.data());
 }
 
 // ---------------------------------------------------------------------------
-// MCP server factory — one instance per request (stateless)
+// Tool definitions for Claude
 // ---------------------------------------------------------------------------
-
-const AUTH_REQUIRED = {
-  content: [
-    {
-      type: 'text' as const,
-      text: 'Authentication required. Provide a valid Firebase ID token as a Bearer token.',
+const TOOLS: Anthropic.Tool[] = [
+  {
+    name: 'get_diary_entries',
+    description:
+      'Fetch diary entries (weight + meals + calories) for a date range. ' +
+      'Use this to answer questions about what the user ate over a period, ' +
+      'their calorie intake, weight trends, or meal patterns.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        start_date: {
+          type: 'string',
+          description: 'Start date in YYYY-MM-DD format (inclusive)',
+        },
+        end_date: {
+          type: 'string',
+          description: 'End date in YYYY-MM-DD format (inclusive)',
+        },
+      },
+      required: ['start_date', 'end_date'],
     },
-  ],
-};
-
-function buildMcpServer(uid: string | null): McpServer {
-  const server = new McpServer({
-    name: 'morpholody',
-    version: '1.0.0',
-  });
-
-  // ── Diary tools ─────────────────────────────────────────────────────────
-
-  server.tool(
-    'get_diary_entry',
-    'Get the diary entry for a specific date, including meals, calories, and body weight.',
-    { date: z.string().describe('Date in YYYY-MM-DD format, e.g. "2024-03-15"') },
-    async ({ date }) => {
-      if (!uid) return AUTH_REQUIRED;
-      const snap = await db.doc(`users/${uid}/diary/${date}`).get();
-      if (!snap.exists) {
-        return { content: [{ type: 'text', text: `No diary entry found for ${date}.` }] };
-      }
-      const entry = snap.data() as DiaryEntry;
-      return { content: [{ type: 'text', text: formatDiaryEntry(entry) }] };
+  },
+  {
+    name: 'get_diary_entry',
+    description:
+      'Fetch the diary entry for a single specific date. ' +
+      'Use this when the user asks about a particular day.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        date: {
+          type: 'string',
+          description: 'Date in YYYY-MM-DD format',
+        },
+      },
+      required: ['date'],
     },
-  );
-
-  server.tool(
-    'get_diary_entries_for_range',
-    'Get all diary entries between two dates (inclusive). Maximum range is 90 days.',
-    {
-      start_date: z.string().describe('Start date in YYYY-MM-DD format'),
-      end_date: z.string().describe('End date in YYYY-MM-DD format'),
+  },
+  {
+    name: 'get_ingredients',
+    description:
+      "Fetch all ingredients in the user's ingredient library with their " +
+      'calories per unit. Use this to answer questions about nutritional ' +
+      'values of ingredients or what ingredients the user has saved.',
+    input_schema: {
+      type: 'object',
+      properties: {},
+      required: [],
     },
-    async ({ start_date, end_date }) => {
-      if (!uid) return AUTH_REQUIRED;
-      if (daysBetween(start_date, end_date) > 90) {
-        return {
-          content: [
-            { type: 'text', text: 'Date range exceeds 90-day limit. Please narrow the range.' },
-          ],
-        };
-      }
-      const snap = await db
-        .collection(`users/${uid}/diary`)
-        .where('date', '>=', start_date)
-        .where('date', '<=', end_date)
-        .orderBy('date')
-        .get();
-
-      if (snap.empty) {
-        return {
-          content: [
-            { type: 'text', text: `No diary entries found between ${start_date} and ${end_date}.` },
-          ],
-        };
-      }
-
-      const entries = snap.docs.map((d) => d.data() as DiaryEntry);
-      const text = entries.map(formatDiaryEntry).join('\n\n---\n\n');
-      return { content: [{ type: 'text', text }] };
-    },
-  );
-
-  server.tool(
-    'get_diary_summary_for_month',
-    'Get a statistical summary for a given month: average daily calories, average weight, and number of entries.',
-    {
-      year: z.number().int().describe('Year, e.g. 2024'),
-      month: z.number().int().min(1).max(12).describe('Month number 1–12'),
-    },
-    async ({ year, month }) => {
-      if (!uid) return AUTH_REQUIRED;
-      const mm = String(month).padStart(2, '0');
-      const snap = await db
-        .collection(`users/${uid}/diary`)
-        .where('date', '>=', `${year}-${mm}-01`)
-        .where('date', '<=', `${year}-${mm}-31`)
-        .orderBy('date')
-        .get();
-
-      if (snap.empty) {
-        return {
-          content: [{ type: 'text', text: `No entries found for ${year}-${mm}.` }],
-        };
-      }
-
-      const entries = snap.docs.map((d) => d.data() as DiaryEntry);
-      const withCalories = entries.filter((e) => e.calories != null);
-      const withWeight = entries.filter((e) => e.weight != null);
-
-      const avgCalories =
-        withCalories.length > 0
-          ? Math.round(
-              withCalories.reduce((s, e) => s + (e.calories ?? 0), 0) / withCalories.length,
-            )
-          : null;
-      const avgWeight =
-        withWeight.length > 0
-          ? (withWeight.reduce((s, e) => s + (e.weight ?? 0), 0) / withWeight.length).toFixed(1)
-          : null;
-
-      const lines = [
-        `Month: ${year}-${mm}`,
-        `Total entries: ${entries.length}`,
-        avgCalories != null
-          ? `Average daily calories: ${avgCalories} kcal`
-          : 'Average daily calories: not enough data',
-        avgWeight != null
-          ? `Average body weight: ${avgWeight} kg`
-          : 'Average body weight: not enough data',
-      ];
-      return { content: [{ type: 'text', text: lines.join('\n') }] };
-    },
-  );
-
-  // ── Ingredient tools ─────────────────────────────────────────────────────
-
-  server.tool(
-    'list_ingredients',
-    "List all ingredients in the user's food library, sorted alphabetically.",
-    {},
-    async () => {
-      if (!uid) return AUTH_REQUIRED;
-      const snap = await db.collection(`users/${uid}/ingredients`).orderBy('nameLower').get();
-
-      if (snap.empty) {
-        return { content: [{ type: 'text', text: 'No ingredients found in your library.' }] };
-      }
-
-      const ingredients = snap.docs.map((d) => d.data() as Ingredient);
-      const text = ingredients
-        .map((i) => `• ${i.name} — ${i.caloriesPerUnit} kcal per ${i.unitsLabel ?? 'unit'}`)
-        .join('\n');
-      return { content: [{ type: 'text', text }] };
-    },
-  );
-
-  server.tool(
-    'search_ingredients',
-    "Search the user's ingredient library by name prefix.",
-    {
-      query: z
-        .string()
-        .describe('Name prefix to search for, e.g. "chick" to find "Chicken breast"'),
-    },
-    async ({ query }) => {
-      if (!uid) return AUTH_REQUIRED;
-      const lower = query.toLowerCase();
-      const snap = await db
-        .collection(`users/${uid}/ingredients`)
-        .where('nameLower', '>=', lower)
-        .where('nameLower', '<=', lower + '')
-        .orderBy('nameLower')
-        .limit(20)
-        .get();
-
-      if (snap.empty) {
-        return { content: [{ type: 'text', text: `No ingredients found matching "${query}".` }] };
-      }
-
-      const ingredients = snap.docs.map((d) => d.data() as Ingredient);
-      const text = ingredients
-        .map((i) => `• ${i.name} — ${i.caloriesPerUnit} kcal per ${i.unitsLabel ?? 'unit'}`)
-        .join('\n');
-      return { content: [{ type: 'text', text }] };
-    },
-  );
-
-  return server;
-}
+  },
+];
 
 // ---------------------------------------------------------------------------
-// Formatting helpers
+// Tool execution
 // ---------------------------------------------------------------------------
-
-function formatDiaryEntry(entry: DiaryEntry): string {
-  const lines: string[] = [`Date: ${entry.date}`];
-  if (entry.weight != null) lines.push(`Body weight: ${entry.weight} kg`);
-  if (entry.calories != null) lines.push(`Total calories: ${entry.calories} kcal`);
-
-  for (const meal of entry.meals ?? []) {
-    lines.push(`\nMeal at ${meal.time}${meal.calories != null ? ` (${meal.calories} kcal)` : ''}:`);
-    for (const comp of meal.components ?? []) {
-      const units =
-        'units' in comp && comp.units != null
-          ? ` × ${comp.units} ${comp.unitsLabel ?? 'units'}`
-          : '';
-      const cal = comp.calories != null ? ` — ${comp.calories} kcal` : '';
-      lines.push(`  • ${comp.name}${units}${cal}`);
+async function executeTool(
+  toolName: string,
+  toolInput: Record<string, string>,
+  uid: string,
+): Promise<string> {
+  try {
+    if (toolName === 'get_diary_entries') {
+      const entries = await getDiaryEntries(uid, toolInput.start_date, toolInput.end_date);
+      if (entries.length === 0) return 'No diary entries found for this date range.';
+      return JSON.stringify(entries);
     }
+    if (toolName === 'get_diary_entry') {
+      const entry = await getDiaryEntry(uid, toolInput.date);
+      if (!entry) return `No diary entry found for ${toolInput.date}.`;
+      return JSON.stringify(entry);
+    }
+    if (toolName === 'get_ingredients') {
+      const ingredients = await getIngredients(uid);
+      if (ingredients.length === 0) return 'No ingredients found.';
+      return JSON.stringify(ingredients);
+    }
+    return `Unknown tool: ${toolName}`;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    return `Error executing tool: ${message}`;
   }
-  return lines.join('\n');
-}
-
-function daysBetween(a: string, b: string): number {
-  return Math.abs((new Date(b).getTime() - new Date(a).getTime()) / 86_400_000);
 }
 
 // ---------------------------------------------------------------------------
-// Firebase HTTP Function
+// Express app
 // ---------------------------------------------------------------------------
+const app = express();
 
-// Requests that don't expose user data and are safe to serve unauthenticated.
-function isPublicRequest(req: { method: string; body?: { method?: string } }): boolean {
-  if (req.method === 'GET') return true;
-  const rpcMethod = req.body?.method;
-  return rpcMethod === 'tools/list' || rpcMethod === 'initialize';
+if (process.env.ALLOWED_ORIGINS) {
+  const origins = process.env.ALLOWED_ORIGINS.split(',');
+  app.use(cors({ origin: origins }));
 }
 
-export const mcp = onRequest({ region: 'europe-west3', timeoutSeconds: 540 }, async (req, res) => {
-  if (req.method === 'DELETE') {
-    res.status(200).json({ message: 'Session terminated' });
+app.use(express.json());
+
+app.post('/chat', async (req, res) => {
+  const { message, idToken, history } = req.body as {
+    message: string;
+    idToken: string;
+    history?: Anthropic.MessageParam[];
+  };
+
+  if (!message || !idToken) {
+    res.status(400).json({ error: 'message and idToken are required' });
     return;
   }
 
-  let uid: string | null = null;
+  // Verify Firebase ID token
+  let uid: string;
   try {
-    uid = await verifyToken(req.headers.authorization as string | undefined);
+    const decoded = await auth.verifyIdToken(idToken);
+    uid = decoded.uid;
   } catch {
-    if (!isPublicRequest(req)) {
-      res
-        .status(401)
-        .json({ error: 'Unauthorized: provide a valid Firebase ID token as Bearer token' });
-      return;
-    }
+    res.status(401).json({ error: 'Invalid or expired Firebase token' });
+    return;
   }
 
-  const server = buildMcpServer(uid);
-  const transport = new StreamableHTTPServerTransport({
-    sessionIdGenerator: undefined,
-  });
+  const today = new Date().toISOString().split('T')[0];
 
-  res.on('close', () => transport.close());
-  await server.connect(transport);
+  const messages: Anthropic.MessageParam[] = [
+    ...(history ?? []),
+    { role: 'user', content: message },
+  ];
 
-  if (req.method === 'GET') {
-    await transport.handleRequest(req, res);
-  } else {
-    await transport.handleRequest(req, res, req.body);
+  try {
+    let response = await anthropic.messages.create({
+      model: 'claude-opus-4-8',
+      max_tokens: 4096,
+      thinking: { type: 'disabled' },
+      system: `You are a helpful nutrition and health assistant embedded in the Morpholody app.
+You have access to the user's food diary and ingredient library via tools.
+Today's date is ${today}.
+When the user asks about their eating habits, weight, calories, or specific foods, use the tools to look up their actual data before answering.
+Be concise, friendly, and specific — reference the actual data you find rather than giving generic advice.
+Do not share raw JSON with the user; summarise findings in plain language.`,
+      tools: TOOLS,
+      messages,
+    });
+
+    // Agentic loop: handle tool calls until Claude is done
+    while (response.stop_reason === 'tool_use') {
+      const toolUseBlocks = response.content.filter(
+        (b): b is Anthropic.ToolUseBlock => b.type === 'tool_use',
+      );
+
+      messages.push({ role: 'assistant', content: response.content });
+
+      const toolResults: Anthropic.ToolResultBlockParam[] = await Promise.all(
+        toolUseBlocks.map(async (block) => ({
+          type: 'tool_result' as const,
+          tool_use_id: block.id,
+          content: await executeTool(block.name, block.input as Record<string, string>, uid),
+        })),
+      );
+
+      messages.push({ role: 'user', content: toolResults });
+
+      response = await anthropic.messages.create({
+        model: 'claude-opus-4-8',
+        max_tokens: 4096,
+        thinking: { type: 'disabled' },
+        system: `You are a helpful nutrition and health assistant embedded in the Morpholody app.
+You have access to the user's food diary and ingredient library via tools.
+Today's date is ${today}.
+When the user asks about their eating habits, weight, calories, or specific foods, use the tools to look up their actual data before answering.
+Be concise, friendly, and specific — reference the actual data you find rather than giving generic advice.
+Do not share raw JSON with the user; summarise findings in plain language.`,
+        tools: TOOLS,
+        messages,
+      });
+    }
+
+    const textBlock = response.content.find((b): b is Anthropic.TextBlock => b.type === 'text');
+    const assistantText = textBlock?.text ?? '';
+
+    // Return assistant reply + updated history (without tool internals for the client)
+    messages.push({ role: 'assistant', content: assistantText });
+
+    // Build clean history (user text + assistant text only) to send back
+    const cleanHistory = messages.filter(
+      (m): m is Anthropic.MessageParam =>
+        typeof m.content === 'string' ||
+        (Array.isArray(m.content) &&
+          m.content.every((b) => (b as { type: string }).type === 'text')),
+    );
+
+    res.json({ reply: assistantText, history: cleanHistory });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    console.error('Chat error:', err);
+    res.status(500).json({ error: message });
   }
 });
+
+app.get('/health', (_req, res) => res.json({ ok: true }));
+
+export const mcp = onRequest({ region: 'europe-west3' }, app);

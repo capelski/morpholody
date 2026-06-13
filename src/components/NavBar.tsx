@@ -1,5 +1,5 @@
-import './NavBar.css';
 import { type View } from '../types/View';
+import './NavBar.css';
 
 interface NavBarProps {
   active: View;
@@ -32,6 +32,13 @@ export default function NavBar({ active, onChange, onSignIn, onSignOut }: NavBar
         >
           <span className="navbar-icon">&#129379;</span>
           Components
+        </button>
+        <button
+          className={`navbar-item ${active === 'chat' ? 'active' : ''}`}
+          onClick={() => onChange('chat')}
+        >
+          <span className="navbar-icon">&#129302;</span>
+          Chat
         </button>
       </div>
       {onSignIn && (

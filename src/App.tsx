@@ -1,6 +1,7 @@
 import { signOut } from 'firebase/auth';
 import { useState } from 'react';
 import './App.css';
+import Chat from './components/Chat';
 import Diary from './components/Diary';
 import Evolution from './components/Evolution';
 import Ingredients from './components/Ingredients';
@@ -40,6 +41,8 @@ function AppShell() {
             <Diary viewYear={viewYear} viewMonth={viewMonth} onMonthChange={handleMonthChange} />
           ) : view === 'evolution' ? (
             <Evolution viewYear={viewYear} viewMonth={viewMonth} onMonthChange={handleMonthChange} />
+          ) : view === 'chat' ? (
+            <Chat />
           ) : (
             <Ingredients />
           )}
