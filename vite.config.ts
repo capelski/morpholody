@@ -1,10 +1,18 @@
-import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { defineConfig, UserConfig } from 'vite';
 
-export default defineConfig({
+const config: UserConfig = {
   plugins: [react()],
-  base: '/morpholody/',
   build: {
-    outDir: 'docs',
+    outDir: 'dist',
   },
-});
+};
+
+const { IS_GITHUB_PAGES_BUILD } = process.env;
+if (IS_GITHUB_PAGES_BUILD) {
+  config.base = '/morpholody/';
+  config.build = config.build || {};
+  config.build.outDir = 'docs';
+}
+
+export default defineConfig(config);
