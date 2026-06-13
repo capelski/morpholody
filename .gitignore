@@ -1,5 +1,6 @@
 dist/
 node_modules/
+functions/lib/
 .DS_Store
 .env
 .env.local

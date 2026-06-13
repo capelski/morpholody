@@ -8,7 +8,9 @@
       "Bash(npx tsc *)",
       "mcp__Claude_Preview__preview_start",
       "Bash(sed *)",
-      "Bash(git *)"
+      "Bash(git *)",
+      "Bash(xargs cat)",
+      "Bash(xxd)"
     ]
   }
 }
