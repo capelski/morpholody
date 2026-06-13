@@ -1,5 +1,5 @@
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp';
 import { initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
@@ -32,7 +32,12 @@ async function verifyToken(authHeader: string | undefined): Promise<string> {
 // ---------------------------------------------------------------------------
 
 const AUTH_REQUIRED = {
-  content: [{ type: 'text' as const, text: 'Authentication required. Provide a valid Firebase ID token as a Bearer token.' }],
+  content: [
+    {
+      type: 'text' as const,
+      text: 'Authentication required. Provide a valid Firebase ID token as a Bearer token.',
+    },
+  ],
 };
 
 function buildMcpServer(uid: string | null): McpServer {
