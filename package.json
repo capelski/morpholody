@@ -5,9 +5,8 @@
   "main": "index.js",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && npm run build:firebase && npm run build:pages",
-    "build:firebase": "vite build",
-    "build:pages": "export IS_GITHUB_PAGES_BUILD=true; vite build",
+    "build": "vite build",
+    "build:pages": "tsc && export IS_GITHUB_PAGES_BUILD=true && vite build",
     "preview": "vite preview",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
