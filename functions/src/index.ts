@@ -31,7 +31,11 @@ async function verifyToken(authHeader: string | undefined): Promise<string> {
 // MCP server factory — one instance per request (stateless)
 // ---------------------------------------------------------------------------
 
-function buildMcpServer(uid: string): McpServer {
+const AUTH_REQUIRED = {
+  content: [{ type: 'text' as const, text: 'Authentication required. Provide a valid Firebase ID token as a Bearer token.' }],
+};
+
+function buildMcpServer(uid: string | null): McpServer {
   const server = new McpServer({
     name: 'morpholody',
     version: '1.0.0',
@@ -44,6 +48,7 @@ function buildMcpServer(uid: string): McpServer {
     'Get the diary entry for a specific date, including meals, calories, and body weight.',
     { date: z.string().describe('Date in YYYY-MM-DD format, e.g. "2024-03-15"') },
     async ({ date }) => {
+      if (!uid) return AUTH_REQUIRED;
       const snap = await db.doc(`users/${uid}/diary/${date}`).get();
       if (!snap.exists) {
         return { content: [{ type: 'text', text: `No diary entry found for ${date}.` }] };
@@ -61,6 +66,7 @@ function buildMcpServer(uid: string): McpServer {
       end_date: z.string().describe('End date in YYYY-MM-DD format'),
     },
     async ({ start_date, end_date }) => {
+      if (!uid) return AUTH_REQUIRED;
       if (daysBetween(start_date, end_date) > 90) {
         return {
           content: [
@@ -97,6 +103,7 @@ function buildMcpServer(uid: string): McpServer {
       month: z.number().int().min(1).max(12).describe('Month number 1–12'),
     },
     async ({ year, month }) => {
+      if (!uid) return AUTH_REQUIRED;
       const mm = String(month).padStart(2, '0');
       const snap = await db
         .collection(`users/${uid}/diary`)
@@ -147,6 +154,7 @@ function buildMcpServer(uid: string): McpServer {
     "List all ingredients in the user's food library, sorted alphabetically.",
     {},
     async () => {
+      if (!uid) return AUTH_REQUIRED;
       const snap = await db.collection(`users/${uid}/ingredients`).orderBy('nameLower').get();
 
       if (snap.empty) {
@@ -170,6 +178,7 @@ function buildMcpServer(uid: string): McpServer {
         .describe('Name prefix to search for, e.g. "chick" to find "Chicken breast"'),
     },
     async ({ query }) => {
+      if (!uid) return AUTH_REQUIRED;
       const lower = query.toLowerCase();
       const snap = await db
         .collection(`users/${uid}/ingredients`)
@@ -225,20 +234,29 @@ function daysBetween(a: string, b: string): number {
 // Firebase HTTP Function
 // ---------------------------------------------------------------------------
 
+// Requests that don't expose user data and are safe to serve unauthenticated.
+function isPublicRequest(req: { method: string; body?: { method?: string } }): boolean {
+  if (req.method === 'GET') return true;
+  const rpcMethod = req.body?.method;
+  return rpcMethod === 'tools/list' || rpcMethod === 'initialize';
+}
+
 export const mcp = onRequest({ region: 'europe-west3', timeoutSeconds: 540 }, async (req, res) => {
   if (req.method === 'DELETE') {
     res.status(200).json({ message: 'Session terminated' });
     return;
   }
 
-  let uid: string;
+  let uid: string | null = null;
   try {
     uid = await verifyToken(req.headers.authorization as string | undefined);
   } catch {
-    res
-      .status(401)
-      .json({ error: 'Unauthorized: provide a valid Firebase ID token as Bearer token' });
-    return;
+    if (!isPublicRequest(req)) {
+      res
+        .status(401)
+        .json({ error: 'Unauthorized: provide a valid Firebase ID token as Bearer token' });
+      return;
+    }
   }
 
   const server = buildMcpServer(uid);
